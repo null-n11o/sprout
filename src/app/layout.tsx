@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import { AuthProvider } from "@/components/auth";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
 
 const mPlusRounded = M_PLUS_Rounded_1c({
@@ -12,7 +13,6 @@ const mPlusRounded = M_PLUS_Rounded_1c({
 export const metadata: Metadata = {
   title: "Sprout - 家族の成長記録",
   description: "世界一温かいクローズド家族専用SNS",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -39,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${mPlusRounded.variable} font-sans antialiased`}>
+        <ServiceWorkerRegister />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -14,7 +14,7 @@ const ALLOWED_TYPES = [
 export async function POST(request: Request) {
   try {
     // Check authentication
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
