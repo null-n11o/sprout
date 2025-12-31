@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       profiles: {
@@ -37,6 +37,7 @@ export type Database = {
           role?: "admin" | "editor";
           created_at?: string;
         };
+        Relationships: [];
       };
       children: {
         Row: {
@@ -63,6 +64,7 @@ export type Database = {
           avatar_url?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       posts: {
         Row: {
@@ -92,6 +94,22 @@ export type Database = {
           caption?: string | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "posts_child_id_fkey";
+            columns: ["child_id"];
+            isOneToOne: false;
+            referencedRelation: "children";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       growth_records: {
         Row: {
@@ -121,6 +139,15 @@ export type Database = {
           recorded_at?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "growth_records_child_id_fkey";
+            columns: ["child_id"];
+            isOneToOne: false;
+            referencedRelation: "children";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       reactions: {
         Row: {
@@ -141,6 +168,22 @@ export type Database = {
           user_id?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "reactions_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reactions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       comments: {
         Row: {
@@ -164,6 +207,22 @@ export type Database = {
           content?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: {
@@ -175,8 +234,11 @@ export type Database = {
     Enums: {
       [_ in never]: never;
     };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-};
+}
 
 // Helper types
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -185,3 +247,8 @@ export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type GrowthRecord = Database["public"]["Tables"]["growth_records"]["Row"];
 export type Reaction = Database["public"]["Tables"]["reactions"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
+
+export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
+export type GrowthRecordInsert = Database["public"]["Tables"]["growth_records"]["Insert"];
+export type ReactionInsert = Database["public"]["Tables"]["reactions"]["Insert"];
+export type CommentInsert = Database["public"]["Tables"]["comments"]["Insert"];
