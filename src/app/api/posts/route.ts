@@ -1,0 +1,77 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+const POSTS_PER_PAGE = 10;
+
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const cursor = searchParams.get("cursor");
+  const childId = searchParams.get("child_id");
+
+  let query = supabase
+    .from("posts")
+    .select(
+      `
+      *,
+      child:children!inner(id, name, birth_date, avatar_url),
+      user:profiles!inner(id, name, avatar_url),
+      reactions:reactions(count),
+      comments:comments(count)
+    `
+    )
+    .order("created_at", { ascending: false })
+    .limit(POSTS_PER_PAGE);
+
+  if (childId) {
+    query = query.eq("child_id", childId);
+  }
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data: posts, error } = await query;
+
+  if (error) {
+    console.error("Posts fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch posts" },
+      { status: 500 }
+    );
+  }
+
+  const transformedPosts = posts?.map((post) => {
+    const { reactions, comments, ...rest } = post as {
+      reactions: { count: number }[];
+      comments: { count: number }[];
+      [key: string]: unknown;
+    };
+    return {
+      ...rest,
+      reaction_count: reactions?.[0]?.count ?? 0,
+      comment_count: comments?.[0]?.count ?? 0,
+    };
+  });
+
+  const lastPost = posts?.[posts.length - 1];
+  const nextCursor =
+    posts && posts.length === POSTS_PER_PAGE && lastPost
+      ? (lastPost as { created_at: string }).created_at
+      : null;
+
+  return NextResponse.json({
+    posts: transformedPosts,
+    nextCursor,
+  });
+}
