@@ -10,16 +10,16 @@ type Child = {
 };
 
 type UploadFormProps = {
-  children: Child[];
+  childList: Child[];
   onSuccess?: () => void;
   onCancel?: () => void;
 };
 
-export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
+export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedChildId, setSelectedChildId] = useState<string>(
-    children[0]?.id || ""
+    childList[0]?.id || ""
   );
   const [caption, setCaption] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -198,7 +198,7 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
 
       {/* 子供選択 */}
       <div className="flex gap-2">
-        {children.map((child) => {
+        {childList.map((child) => {
           const isSelected = selectedChildId === child.id;
           const colorClass =
             child.name === "カイリ"

@@ -3,7 +3,7 @@
 type ChildFilterProps = {
   selectedChildId: string | null;
   onSelect: (childId: string | null) => void;
-  children: Array<{
+  childList: Array<{
     id: string;
     name: string;
   }>;
@@ -12,7 +12,7 @@ type ChildFilterProps = {
 export function ChildFilter({
   selectedChildId,
   onSelect,
-  children,
+  childList,
 }: ChildFilterProps) {
   return (
     <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide">
@@ -26,7 +26,7 @@ export function ChildFilter({
       >
         全員
       </button>
-      {children.map((child) => {
+      {childList.map((child) => {
         const isSelected = selectedChildId === child.id;
         const colorClass =
           child.name === "カイリ"

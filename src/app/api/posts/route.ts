@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       child:children!inner(id, name, birth_date, avatar_url),
       user:profiles!inner(id, name, avatar_url),
       reactions:reactions(count),
-      comments:comments(count)
+      comments:comments(count),
+      user_reaction:reactions!left(id, user_id)
     `
     )
     .order("created_at", { ascending: false })
@@ -52,15 +53,18 @@ export async function GET(request: NextRequest) {
   }
 
   const transformedPosts = posts?.map((post) => {
-    const { reactions, comments, ...rest } = post as {
+    const { reactions, comments, user_reaction, ...rest } = post as {
       reactions: { count: number }[];
       comments: { count: number }[];
+      user_reaction: { id: string; user_id: string }[] | null;
       [key: string]: unknown;
     };
+    const hasReacted = user_reaction?.some((r) => r.user_id === user.id) ?? false;
     return {
       ...rest,
       reaction_count: reactions?.[0]?.count ?? 0,
       comment_count: comments?.[0]?.count ?? 0,
+      has_reacted: hasReacted,
     };
   });
 
