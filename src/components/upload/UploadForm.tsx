@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Camera, X, Loader2, Sparkles } from "lucide-react";
+import { Camera, X, Loader2, Sparkles, AlertCircle } from "lucide-react";
 
 type Child = {
   id: string;
@@ -25,6 +25,7 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
+  const [captionError, setCaptionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +43,7 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setPreview(null);
+    setCaptionError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -51,6 +53,8 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
     if (!selectedFile) return;
 
     setIsGeneratingCaption(true);
+    setCaptionError(null);
+
     try {
       const formData = new FormData();
       formData.append("image", selectedFile);
@@ -60,12 +64,16 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
         body: formData,
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         setCaption(data.caption);
+      } else {
+        setCaptionError(data.error || "キャプションの生成に失敗しました");
       }
     } catch (error) {
       console.error("Caption generation failed:", error);
+      setCaptionError("ネットワークエラーが発生しました");
     } finally {
       setIsGeneratingCaption(false);
     }
@@ -243,6 +251,12 @@ export function UploadForm({ children, onSuccess, onCancel }: UploadFormProps) {
           className="w-full px-4 py-3 bg-gray-100 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-gray-300"
           rows={3}
         />
+        {captionError && (
+          <div className="flex items-start gap-2 p-3 bg-red-50 text-red-600 rounded-xl text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{captionError}</span>
+          </div>
+        )}
       </div>
 
       {/* 進捗バー */}

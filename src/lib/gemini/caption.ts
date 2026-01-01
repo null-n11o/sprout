@@ -13,7 +13,7 @@ const CAPTION_PROMPT = `あなたは家族の成長記録アプリのキャプ�
 
 export async function generateCaption(imageData: string): Promise<string> {
   const client = getGeminiClient();
-  const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   // Base64 からプレフィックスを除去
   const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");

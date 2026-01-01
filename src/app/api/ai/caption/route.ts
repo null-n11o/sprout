@@ -36,8 +36,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ caption });
   } catch (error) {
     console.error("Caption generation error:", error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
+    // レート制限エラー
+    if (errorMessage.includes("429") || errorMessage.includes("quota")) {
+      return NextResponse.json(
+        {
+          error: "API利用制限に達しました。しばらく待ってから再度お試しください。",
+          code: "RATE_LIMIT",
+        },
+        { status: 429 }
+      );
+    }
+
+    // APIキー未設定
+    if (errorMessage.includes("API key not valid") || errorMessage.includes("GEMINI_API_KEY")) {
+      return NextResponse.json(
+        {
+          error: "AI機能が設定されていません。",
+          code: "API_NOT_CONFIGURED",
+        },
+        { status: 503 }
+      );
+    }
+
+    // モデルが見つからない
+    if (errorMessage.includes("not found") || errorMessage.includes("not supported")) {
+      return NextResponse.json(
+        {
+          error: "AIモデルが利用できません。",
+          code: "MODEL_NOT_AVAILABLE",
+        },
+        { status: 503 }
+      );
+    }
+
+    // その他のエラー
     return NextResponse.json(
-      { error: "Failed to generate caption" },
+      {
+        error: "キャプションの生成に失敗しました。",
+        code: "GENERATION_FAILED",
+      },
       { status: 500 }
     );
   }
