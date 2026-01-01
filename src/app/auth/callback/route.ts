@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
+// 許可するメールアドレスのリスト
+const ALLOWED_EMAILS = [
+  "your-email@gmail.com", // TODO: 実際のメールアドレスに変更
+];
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -9,8 +14,19 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user?.email && ALLOWED_EMAILS.includes(user.email)) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      // 許可されていないメールアドレス → サインアウトして拒否
+      await supabase.auth.signOut();
+      return NextResponse.redirect(`${origin}/login?error=unauthorized`);
     }
   }
 
