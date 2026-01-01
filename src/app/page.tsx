@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Header, BottomNav } from "@/components/layout";
-import { AuthGuard } from "@/components/auth";
+import { AuthGuard, useAuth } from "@/components/auth";
 import { TimelineFeed } from "@/components/timeline";
 import { Loader2 } from "lucide-react";
 
@@ -14,6 +14,7 @@ type Child = {
 };
 
 export default function Home() {
+  const { user } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,7 +47,7 @@ export default function Home() {
                 <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
               </div>
             ) : (
-              <TimelineFeed children={children} />
+              <TimelineFeed childList={children} currentUserId={user?.id ?? ""} />
             )}
           </div>
         </main>

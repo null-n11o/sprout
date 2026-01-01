@@ -63,7 +63,7 @@ export default function UploadPage() {
               </div>
             ) : (
               <UploadForm
-                children={children}
+                childList={children}
                 onSuccess={handleSuccess}
                 onCancel={handleCancel}
               />
