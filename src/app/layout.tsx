@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { M_PLUS_Rounded_1c } from "next/font/google";
 import { AuthProvider } from "@/components/auth";
+import { ToastProvider } from "@/components/ui";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -40,7 +41,9 @@ export default function RootLayout({
     <html lang="ja">
       <body className={`${mPlusRounded.variable} font-sans antialiased`}>
         <ServiceWorkerRegister />
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

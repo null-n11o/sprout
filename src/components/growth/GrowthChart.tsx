@@ -35,12 +35,12 @@ type Child = {
 
 type GrowthChartProps = {
   records: GrowthRecord[];
-  children: Child[];
+  childList: Child[];
 };
 
 type ChartType = "height" | "weight";
 
-export function GrowthChart({ records, children }: GrowthChartProps) {
+export function GrowthChart({ records, childList }: GrowthChartProps) {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [chartType, setChartType] = useState<ChartType>("height");
 
@@ -80,7 +80,7 @@ export function GrowthChart({ records, children }: GrowthChartProps) {
         >
           全員
         </button>
-        {children.map((child) => {
+        {childList.map((child) => {
           const isSelected = selectedChildId === child.id;
           const colorClass =
             child.name === "カイリ"

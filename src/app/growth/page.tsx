@@ -101,7 +101,7 @@ export default function GrowthPage() {
                   </button>
                 </div>
                 <GrowthRecordForm
-                  children={children}
+                  childList={children}
                   onSuccess={handleSuccess}
                   onCancel={() => setShowForm(false)}
                 />
@@ -111,7 +111,7 @@ export default function GrowthPage() {
                 <p className="text-gray-500">子供のデータがありません</p>
               </div>
             ) : (
-              <GrowthChart records={records} children={children} />
+              <GrowthChart records={records} childList={children} />
             )}
           </div>
         </main>

@@ -9,18 +9,18 @@ type Child = {
 };
 
 type GrowthRecordFormProps = {
-  children: Child[];
+  childList: Child[];
   onSuccess?: () => void;
   onCancel?: () => void;
 };
 
 export function GrowthRecordForm({
-  children,
+  childList,
   onSuccess,
   onCancel,
 }: GrowthRecordFormProps) {
   const [selectedChildId, setSelectedChildId] = useState<string>(
-    children[0]?.id || ""
+    childList[0]?.id || ""
   );
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
@@ -74,7 +74,7 @@ export function GrowthRecordForm({
 
       {/* 子供選択 */}
       <div className="flex gap-2">
-        {children.map((child) => {
+        {childList.map((child) => {
           const isSelected = selectedChildId === child.id;
           const colorClass =
             child.name === "カイリ"
