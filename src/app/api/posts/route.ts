@@ -75,3 +75,55 @@ export async function GET(request: NextRequest) {
     nextCursor,
   });
 }
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { child_id, media_url, media_type, caption } = body;
+
+  if (!child_id || !media_url || !media_type) {
+    return NextResponse.json(
+      { error: "Missing required fields: child_id, media_url, media_type" },
+      { status: 400 }
+    );
+  }
+
+  if (!["image", "video"].includes(media_type)) {
+    return NextResponse.json(
+      { error: "Invalid media_type. Must be 'image' or 'video'" },
+      { status: 400 }
+    );
+  }
+
+  const { data: post, error } = await supabase
+    .from("posts")
+    .insert({
+      child_id: child_id as string,
+      user_id: user.id,
+      media_url: media_url as string,
+      media_type: media_type as "image" | "video",
+      caption: (caption || null) as string | null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Post creation error:", error);
+    return NextResponse.json(
+      { error: "Failed to create post" },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ post }, { status: 201 });
+}
