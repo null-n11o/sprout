@@ -46,3 +46,68 @@ body {
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/* Interactive feedback */
+.interactive {
+  @apply transition-transform duration-150 ease-out active:scale-95;
+}
+
+.interactive-subtle {
+  @apply transition-transform duration-100 ease-out active:scale-[0.98];
+}
+
+/* Glass morphism */
+.glass {
+  @apply bg-white/80 backdrop-blur-md;
+}
+
+.glass-strong {
+  @apply bg-white/90 backdrop-blur-lg;
+}
+
+/* Gradient backgrounds */
+.gradient-mare {
+  @apply bg-gradient-to-br from-mare-400 to-mare-500;
+}
+
+.gradient-kairi {
+  @apply bg-gradient-to-br from-kairi-400 to-kairi-500;
+}
+
+.gradient-warm {
+  @apply bg-gradient-to-br from-mare-100 via-cream-50 to-kairi-100;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-gray-200 rounded-lg animate-shimmer bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%];
+}
+
+/* Focus ring */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-mare-400 focus:ring-offset-2 focus:ring-offset-cream-50;
+}
+
+/* Safe area padding for mobile */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

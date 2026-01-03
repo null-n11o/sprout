@@ -2,8 +2,11 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { getFormattedAge } from "@/lib/utils";
-import { Heart, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
+import { HeartButton } from "@/components/ui";
+import { scaleIn, transitions } from "@/lib/animations";
 
 export type PostWithDetails = {
   id: string;
@@ -33,13 +36,14 @@ type PostCardProps = {
   post: PostWithDetails;
   onCommentClick?: (postId: string) => void;
   onReactionChange?: (postId: string, hasReacted: boolean, count: number) => void;
+  index?: number;
 };
 
-export function PostCard({ post, onCommentClick, onReactionChange }: PostCardProps) {
+export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: PostCardProps) {
   const [hasReacted, setHasReacted] = useState(post.has_reacted);
   const [reactionCount, setReactionCount] = useState(post.reaction_count);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const age = getFormattedAge(post.child.birth_date, post.created_at);
   const formattedDate = new Date(post.created_at).toLocaleDateString("ja-JP", {
@@ -48,16 +52,15 @@ export function PostCard({ post, onCommentClick, onReactionChange }: PostCardPro
     day: "numeric",
   });
 
-  const childColorClass =
-    post.child.name === "カイリ"
-      ? "bg-kairi-100 text-kairi-600"
-      : "bg-mare-100 text-mare-600";
+  const isKairi = post.child.name === "カイリ";
+  const childColorClass = isKairi
+    ? "bg-kairi-100 text-kairi-600 border-kairi-200"
+    : "bg-mare-100 text-mare-600 border-mare-200";
 
   const handleReactionToggle = useCallback(async () => {
     if (isLoading) return;
 
     setIsLoading(true);
-    setIsAnimating(true);
 
     // Optimistic update
     const newHasReacted = !hasReacted;
@@ -87,22 +90,52 @@ export function PostCard({ post, onCommentClick, onReactionChange }: PostCardPro
       setReactionCount(reactionCount);
     } finally {
       setIsLoading(false);
-      setTimeout(() => setIsAnimating(false), 300);
     }
   }, [hasReacted, reactionCount, isLoading, post.id, onReactionChange]);
 
   return (
-    <article className="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <motion.article
+      variants={scaleIn}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{
+        ...transitions.smooth,
+        delay: index * 0.05,
+      }}
+      whileHover={{ y: -2 }}
+      className="bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100"
+    >
       {/* メディア */}
-      <div className="relative aspect-square bg-gray-100">
+      <div className="relative aspect-square bg-gray-100 overflow-hidden">
         {post.media_type === "image" ? (
-          <Image
-            src={post.media_url}
-            alt={post.caption || "投稿画像"}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 512px"
-          />
+          <>
+            {/* Placeholder blur */}
+            <AnimatePresence>
+              {!imageLoaded && (
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 skeleton"
+                />
+              )}
+            </AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={imageLoaded ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative w-full h-full"
+            >
+              <Image
+                src={post.media_url}
+                alt={post.caption || "投稿画像"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 512px"
+                onLoad={() => setImageLoaded(true)}
+              />
+            </motion.div>
+          </>
         ) : (
           <video
             src={post.media_url}
@@ -111,55 +144,67 @@ export function PostCard({ post, onCommentClick, onReactionChange }: PostCardPro
             playsInline
           />
         )}
-      </div>
 
-      {/* コンテンツ */}
-      <div className="p-4">
-        {/* ヘッダー */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* Child badge overlay */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="absolute top-3 left-3"
+        >
           <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${childColorClass}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm border ${childColorClass}`}
           >
             {post.child.name}
           </span>
-          <span className="text-xs text-gray-500">{age}</span>
-          <span className="text-xs text-gray-400 ml-auto">{formattedDate}</span>
+        </motion.div>
+      </div>
+
+      {/* コンテンツ */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="p-4"
+      >
+        {/* ヘッダー */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm text-gray-600 font-medium">{age}</span>
+          <span className="text-gray-300">•</span>
+          <span className="text-xs text-gray-400">{formattedDate}</span>
         </div>
 
         {/* キャプション */}
         {post.caption && (
-          <p className="text-gray-700 text-sm leading-relaxed mb-3">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="text-gray-700 text-sm leading-relaxed mb-4"
+          >
             {post.caption}
-          </p>
+          </motion.p>
         )}
 
         {/* アクション */}
-        <div className="flex items-center gap-4 text-gray-500">
-          <button
-            onClick={handleReactionToggle}
+        <div className="flex items-center gap-4">
+          <HeartButton
+            isLiked={hasReacted}
+            count={reactionCount}
+            onToggle={handleReactionToggle}
             disabled={isLoading}
-            className={`flex items-center gap-1 transition-all duration-200 ${
-              hasReacted
-                ? "text-rose-500"
-                : "hover:text-rose-500"
-            } ${isAnimating ? "scale-125" : "scale-100"}`}
-          >
-            <Heart
-              className={`w-5 h-5 transition-all duration-200 ${
-                hasReacted ? "fill-rose-500" : ""
-              }`}
-            />
-            <span className="text-sm">{reactionCount}</span>
-          </button>
-          <button
+          />
+
+          <motion.button
             onClick={() => onCommentClick?.(post.id)}
-            className="flex items-center gap-1 hover:text-blue-500 transition-colors"
+            whileTap={{ scale: 0.9 }}
+            className="flex items-center gap-1.5 p-2 -m-2 rounded-full text-gray-400 hover:text-kairi-500 transition-colors focus-ring"
           >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm">{post.comment_count}</span>
-          </button>
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-sm font-medium">{post.comment_count}</span>
+          </motion.button>
         </div>
-      </div>
-    </article>
+      </motion.div>
+    </motion.article>
   );
 }
