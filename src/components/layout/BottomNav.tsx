@@ -17,13 +17,20 @@ export function BottomNav() {
 
   return (
     <motion.nav
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      transition={transitions.spring}
-      className="fixed bottom-0 left-0 right-0 z-50"
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ ...transitions.spring, delay: 0.1 }}
+      className="fixed bottom-0 left-0 right-0 z-50 pb-safe"
     >
-      <div className="mx-4 mb-4 glass-strong rounded-2xl shadow-medium border border-white/20">
-        <div className="flex items-center justify-around h-16">
+      <div className="mx-4 mb-3 rounded-3xl shadow-large border border-white/30 overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset",
+        }}
+      >
+        <div className="flex items-center justify-around h-[68px]">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -34,25 +41,35 @@ export function BottomNav() {
                 className="relative flex flex-col items-center justify-center w-full h-full"
               >
                 <motion.div
-                  className="flex flex-col items-center"
-                  whileTap={{ scale: 0.9 }}
+                  className="flex flex-col items-center relative"
+                  whileTap={{ scale: 0.85 }}
                   transition={transitions.spring}
                 >
-                  {/* Active indicator */}
+                  {/* Active background pill */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-bg"
+                      className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-br from-mare-100 to-mare-50 rounded-2xl"
+                      transition={transitions.springBouncy}
+                    />
+                  )}
+
+                  {/* Active indicator dot */}
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute -top-1 w-8 h-1 bg-gradient-to-r from-mare-400 to-mare-500 rounded-full"
+                      className="absolute -top-2.5 w-1.5 h-1.5 bg-gradient-to-r from-mare-400 to-mare-500 rounded-full shadow-glow"
                       transition={transitions.springBouncy}
                     />
                   )}
 
                   <motion.div
                     animate={{
-                      scale: isActive ? 1.1 : 1,
-                      y: isActive ? -2 : 0,
+                      scale: isActive ? 1.15 : 1,
+                      y: isActive ? -1 : 0,
                     }}
                     transition={transitions.spring}
+                    className="relative z-10"
                   >
                     <Icon
                       className={`w-6 h-6 transition-colors duration-200 ${
@@ -63,11 +80,11 @@ export function BottomNav() {
 
                   <motion.span
                     animate={{
-                      opacity: isActive ? 1 : 0.6,
-                      scale: isActive ? 1 : 0.95,
+                      opacity: isActive ? 1 : 0.5,
+                      scale: isActive ? 1 : 0.9,
                     }}
                     transition={transitions.snappy}
-                    className={`text-xs mt-1 font-medium ${
+                    className={`relative z-10 text-[11px] mt-1.5 font-semibold tracking-tight ${
                       isActive ? "text-mare-500" : "text-gray-400"
                     }`}
                   >

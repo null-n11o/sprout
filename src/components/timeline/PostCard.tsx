@@ -53,9 +53,6 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
   });
 
   const isKairi = post.child.name === "カイリ";
-  const childColorClass = isKairi
-    ? "bg-kairi-100 text-kairi-600 border-kairi-200"
-    : "bg-mare-100 text-mare-600 border-mare-200";
 
   const handleReactionToggle = useCallback(async () => {
     if (isLoading) return;
@@ -93,6 +90,10 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
     }
   }, [hasReacted, reactionCount, isLoading, post.id, onReactionChange]);
 
+  const badgeGradient = isKairi
+    ? "from-kairi-400 to-kairi-500"
+    : "from-mare-400 to-mare-500";
+
   return (
     <motion.article
       variants={scaleIn}
@@ -101,39 +102,47 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
       exit="exit"
       transition={{
         ...transitions.smooth,
-        delay: index * 0.05,
+        delay: index * 0.06,
       }}
-      whileHover={{ y: -2 }}
-      className="bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100"
+      whileHover={{ y: -4, scale: 1.01 }}
+      className="bg-white rounded-3xl shadow-medium overflow-hidden border border-white/50 relative group"
+      style={{
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.8) inset",
+      }}
     >
+      {/* Decorative corner accent */}
+      <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${badgeGradient} opacity-5 rounded-bl-[100px] pointer-events-none`} />
+
       {/* メディア */}
-      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+      <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
         {post.media_type === "image" ? (
           <>
-            {/* Placeholder blur */}
+            {/* Placeholder blur with shimmer */}
             <AnimatePresence>
               {!imageLoaded && (
                 <motion.div
                   initial={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.3 } }}
                   className="absolute inset-0 skeleton"
                 />
               )}
             </AnimatePresence>
             <motion.div
-              initial={{ opacity: 0, scale: 1.1 }}
+              initial={{ opacity: 0, scale: 1.05 }}
               animate={imageLoaded ? { opacity: 1, scale: 1 } : {}}
-              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="relative w-full h-full"
             >
               <Image
                 src={post.media_url}
                 alt={post.caption || "投稿画像"}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 100vw, 512px"
                 onLoad={() => setImageLoaded(true)}
               />
+              {/* Subtle vignette overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
             </motion.div>
           </>
         ) : (
@@ -145,15 +154,15 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
           />
         )}
 
-        {/* Child badge overlay */}
+        {/* Child badge overlay - more distinctive */}
         <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="absolute top-3 left-3"
+          initial={{ opacity: 0, x: -15, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ delay: 0.25, type: "spring", stiffness: 300 }}
+          className="absolute top-4 left-4"
         >
           <span
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-sm border ${childColorClass}`}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold text-white backdrop-blur-md border border-white/20 shadow-medium bg-gradient-to-r ${badgeGradient}`}
           >
             {post.child.name}
           </span>
@@ -164,14 +173,16 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="p-4"
+        transition={{ delay: 0.15 }}
+        className="p-5"
       >
         {/* ヘッダー */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm text-gray-600 font-medium">{age}</span>
-          <span className="text-gray-300">•</span>
-          <span className="text-xs text-gray-400">{formattedDate}</span>
+        <div className="flex items-center gap-2.5 mb-3">
+          <span className={`text-sm font-semibold ${isKairi ? "text-kairi-500" : "text-mare-500"}`}>
+            {age}
+          </span>
+          <span className="w-1 h-1 rounded-full bg-gray-300" />
+          <span className="text-xs text-gray-400 font-medium">{formattedDate}</span>
         </div>
 
         {/* キャプション */}
@@ -179,15 +190,15 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            className="text-gray-700 text-sm leading-relaxed mb-4"
+            transition={{ delay: 0.2 }}
+            className="text-gray-600 text-sm leading-relaxed mb-4"
           >
             {post.caption}
           </motion.p>
         )}
 
-        {/* アクション */}
-        <div className="flex items-center gap-4">
+        {/* アクション - enhanced styling */}
+        <div className="flex items-center gap-1 pt-2 border-t border-gray-100/80">
           <HeartButton
             isLiked={hasReacted}
             count={reactionCount}
@@ -197,11 +208,12 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
 
           <motion.button
             onClick={() => onCommentClick?.(post.id)}
-            whileTap={{ scale: 0.9 }}
-            className="flex items-center gap-1.5 p-2 -m-2 rounded-full text-gray-400 hover:text-kairi-500 transition-colors focus-ring"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-kairi-500 hover:bg-kairi-50/50 transition-all focus-ring"
           >
-            <MessageCircle className="w-6 h-6" />
-            <span className="text-sm font-medium">{post.comment_count}</span>
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-sm font-semibold">{post.comment_count}</span>
           </motion.button>
         </div>
       </motion.div>

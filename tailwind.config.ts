@@ -76,10 +76,18 @@ const config: Config = {
       boxShadow: {
         soft: "0 2px 8px rgba(0, 0, 0, 0.04)",
         medium: "0 4px 16px rgba(0, 0, 0, 0.08)",
+        large: "0 8px 30px rgba(0, 0, 0, 0.12)",
         glow: "0 0 20px rgba(244, 63, 94, 0.3)",
+        "glow-lg": "0 0 40px rgba(244, 63, 94, 0.4)",
+        inner: "inset 0 2px 4px rgba(0, 0, 0, 0.05)",
+        "card-hover": "0 12px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) inset",
       },
       backdropBlur: {
         xs: "2px",
+        "2xl": "40px",
+      },
+      borderRadius: {
+        "4xl": "2rem",
       },
     },
   },
