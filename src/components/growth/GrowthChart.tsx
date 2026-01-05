@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -40,48 +40,64 @@ type GrowthChartProps = {
 
 type ChartType = "height" | "weight";
 
+// サンプルデータ（典型的な乳幼児の成長推移）
+const SAMPLE_DATA = [
+  { monthAge: 0, height: 50.0, weight: 3.0 },
+  { monthAge: 1, height: 54.0, weight: 4.2 },
+  { monthAge: 2, height: 57.5, weight: 5.2 },
+  { monthAge: 3, height: 60.5, weight: 6.0 },
+  { monthAge: 4, height: 63.0, weight: 6.7 },
+  { monthAge: 5, height: 65.0, weight: 7.2 },
+  { monthAge: 6, height: 67.0, weight: 7.7 },
+  { monthAge: 9, height: 71.5, weight: 8.7 },
+  { monthAge: 12, height: 75.0, weight: 9.5 },
+  { monthAge: 18, height: 81.0, weight: 10.5 },
+  { monthAge: 24, height: 86.0, weight: 11.8 },
+];
+
 export function GrowthChart({ records, childList }: GrowthChartProps) {
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<string>("sample");
   const [chartType, setChartType] = useState<ChartType>("height");
 
-  const filteredRecords = selectedChildId
-    ? records.filter((r) => r.child_id === selectedChildId)
-    : records;
+  // 最初の子供がいればそれを選択、なければサンプル
+  useEffect(() => {
+    if (childList.length > 0) {
+      setSelectedTab(childList[0].id);
+    }
+  }, [childList]);
 
-  // データを月齢ベースに変換
-  const chartData = filteredRecords.map((record) => {
-    const monthAge = calculateMonthAge(
-      record.child.birth_date,
-      record.recorded_at
-    );
-    return {
-      monthAge,
-      height: record.height,
-      weight: record.weight,
-      childName: record.child.name,
-      date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
-    };
-  });
+  const isSampleTab = selectedTab === "sample";
 
-  // 月齢でソート
-  chartData.sort((a, b) => a.monthAge - b.monthAge);
+  // 選択されたタブに応じてデータを取得
+  const chartData = isSampleTab
+    ? SAMPLE_DATA.map((d) => ({
+        ...d,
+        childName: "サンプル",
+        date: `${d.monthAge}ヶ月時点`,
+      }))
+    : records
+        .filter((r) => r.child_id === selectedTab)
+        .map((record) => {
+          const monthAge = calculateMonthAge(
+            record.child.birth_date,
+            record.recorded_at
+          );
+          return {
+            monthAge,
+            height: record.height,
+            weight: record.weight,
+            childName: record.child.name,
+            date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
+          };
+        })
+        .sort((a, b) => a.monthAge - b.monthAge);
 
   return (
     <div className="space-y-4">
       {/* フィルター */}
       <div className="flex gap-2 overflow-x-auto py-2">
-        <button
-          onClick={() => setSelectedChildId(null)}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-            selectedChildId === null
-              ? "bg-gray-800 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          全員
-        </button>
         {childList.map((child) => {
-          const isSelected = selectedChildId === child.id;
+          const isSelected = selectedTab === child.id;
           const colorClass =
             child.name === "カイリ"
               ? isSelected
@@ -94,137 +110,135 @@ export function GrowthChart({ records, childList }: GrowthChartProps) {
           return (
             <button
               key={child.id}
-              onClick={() => setSelectedChildId(child.id)}
+              onClick={() => setSelectedTab(child.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${colorClass}`}
             >
               {child.name}
             </button>
           );
         })}
+        <button
+          onClick={() => setSelectedTab("sample")}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            isSampleTab
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          サンプル
+        </button>
       </div>
 
-      {/* 子供が選択されている場合のみ身長・体重を表示 */}
-      {selectedChildId !== null && (
-        <>
-          {/* グラフタイプ切り替え */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setChartType("height")}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                chartType === "height"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              身長
-            </button>
-            <button
-              onClick={() => setChartType("weight")}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                chartType === "weight"
-                  ? "bg-green-500 text-white"
-                  : "bg-gray-100 text-gray-600"
-              }`}
-            >
-              体重
-            </button>
-          </div>
+      {/* グラフタイプ切り替え */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setChartType("height")}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+            chartType === "height"
+              ? "bg-blue-500 text-white"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          身長
+        </button>
+        <button
+          onClick={() => setChartType("weight")}
+          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+            chartType === "weight"
+              ? "bg-green-500 text-white"
+              : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          体重
+        </button>
+      </div>
 
-          {/* グラフ */}
-          {chartData.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              まだ記録がありません
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="monthAge"
-                    tickFormatter={(value) => `${value}ヶ月`}
-                    stroke="#9ca3af"
-                    fontSize={12}
-                  />
-                  <YAxis
-                    stroke="#9ca3af"
-                    fontSize={12}
-                    tickFormatter={(value) =>
-                      chartType === "height" ? `${value}cm` : `${value}kg`
-                    }
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [
-                      chartType === "height" ? `${value} cm` : `${value} kg`,
-                      name === "height" ? "身長" : "体重",
-                    ]}
-                    labelFormatter={(label) => `${label}ヶ月`}
-                    contentStyle={{
-                      borderRadius: "0.75rem",
-                      border: "none",
-                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    }}
-                  />
-                  <Legend
-                    formatter={(value) => (value === "height" ? "身長" : "体重")}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={chartType}
-                    stroke={chartType === "height" ? "#3b82f6" : "#22c55e"}
-                    strokeWidth={2}
-                    dot={{
-                      fill: chartType === "height" ? "#3b82f6" : "#22c55e",
-                      strokeWidth: 2,
-                    }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* 記録一覧 */}
-          {chartData.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium text-gray-700">記録一覧</h3>
-              <div className="space-y-2">
-                {chartData
-                  .slice()
-                  .reverse()
-                  .map((record, index) => (
-                    <div
-                      key={index}
-                      className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center"
-                    >
-                      <div>
-                        <div className="text-sm text-gray-500">{record.date}</div>
-                        <div className="text-xs text-gray-400">
-                          {record.monthAge}ヶ月
-                        </div>
-                      </div>
-                      <div className="flex gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-500">身長</span>{" "}
-                          <span className="font-medium">{record.height}cm</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">体重</span>{" "}
-                          <span className="font-medium">{record.weight}kg</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
-        </>
+      {/* グラフ */}
+      {chartData.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          まだ記録がありません
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="monthAge"
+                tickFormatter={(value) => `${value}ヶ月`}
+                stroke="#9ca3af"
+                fontSize={12}
+              />
+              <YAxis
+                stroke="#9ca3af"
+                fontSize={12}
+                tickFormatter={(value) =>
+                  chartType === "height" ? `${value}cm` : `${value}kg`
+                }
+              />
+              <Tooltip
+                formatter={(value, name) => [
+                  chartType === "height" ? `${value} cm` : `${value} kg`,
+                  name === "height" ? "身長" : "体重",
+                ]}
+                labelFormatter={(label) => `${label}ヶ月`}
+                contentStyle={{
+                  borderRadius: "0.75rem",
+                  border: "none",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                }}
+              />
+              <Legend
+                formatter={(value) => (value === "height" ? "身長" : "体重")}
+              />
+              <Line
+                type="monotone"
+                dataKey={chartType}
+                stroke={chartType === "height" ? "#3b82f6" : "#22c55e"}
+                strokeWidth={2}
+                dot={{
+                  fill: chartType === "height" ? "#3b82f6" : "#22c55e",
+                  strokeWidth: 2,
+                }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
 
-      {/* 全員選択時のメッセージ */}
-      {selectedChildId === null && (
-        <div className="text-center py-12 text-gray-500">
-          子供を選択すると成長グラフが表示されます
+      {/* 記録一覧 */}
+      {chartData.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700">記録一覧</h3>
+          <div className="space-y-2">
+            {chartData
+              .slice()
+              .reverse()
+              .map((record, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center"
+                >
+                  <div>
+                    <div className="text-sm text-gray-500">{record.date}</div>
+                    <div className="text-xs text-gray-400">
+                      {record.monthAge}ヶ月
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">身長</span>{" "}
+                      <span className="font-medium">{record.height}cm</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">体重</span>{" "}
+                      <span className="font-medium">{record.weight}kg</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
         </div>
       )}
     </div>

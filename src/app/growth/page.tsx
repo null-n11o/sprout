@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Header, BottomNav } from "@/components/layout";
 import { AuthGuard } from "@/components/auth";
-import { GrowthRecordForm, GrowthChart, SampleSection } from "@/components/growth";
+import { GrowthRecordForm, GrowthChart } from "@/components/growth";
 import { Plus, X, Loader2 } from "lucide-react";
 
 type Child = {
@@ -26,36 +26,17 @@ type GrowthRecord = {
   };
 };
 
-type Post = {
-  id: string;
-  child_id: string;
-  media_url: string;
-  media_type: "image" | "video";
-  caption: string | null;
-  created_at: string;
-  child: {
-    id: string;
-    name: string;
-    birth_date: string;
-  };
-};
-
-type ViewMode = "chart" | "sample";
-
 export default function GrowthPage() {
   const [children, setChildren] = useState<Child[]>([]);
   const [records, setRecords] = useState<GrowthRecord[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("chart");
 
   const fetchData = useCallback(async () => {
     try {
-      const [childrenRes, recordsRes, postsRes] = await Promise.all([
+      const [childrenRes, recordsRes] = await Promise.all([
         fetch("/api/children"),
         fetch("/api/growth-records"),
-        fetch("/api/posts"),
       ]);
 
       if (childrenRes.ok) {
@@ -66,11 +47,6 @@ export default function GrowthPage() {
       if (recordsRes.ok) {
         const data = await recordsRes.json();
         setRecords(data.records);
-      }
-
-      if (postsRes.ok) {
-        const data = await postsRes.json();
-        setPosts(data.posts || []);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -135,37 +111,7 @@ export default function GrowthPage() {
                 <p className="text-gray-500">子供のデータがありません</p>
               </div>
             ) : (
-              <>
-                {/* ビューモード切り替えタブ */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => setViewMode("chart")}
-                    className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      viewMode === "chart"
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    成長グラフ
-                  </button>
-                  <button
-                    onClick={() => setViewMode("sample")}
-                    className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      viewMode === "sample"
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    サンプル
-                  </button>
-                </div>
-
-                {viewMode === "chart" ? (
-                  <GrowthChart records={records} childList={children} />
-                ) : (
-                  <SampleSection records={records} posts={posts} />
-                )}
-              </>
+              <GrowthChart records={records} childList={children} />
             )}
           </div>
         </main>
