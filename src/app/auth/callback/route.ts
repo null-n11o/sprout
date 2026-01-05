@@ -4,7 +4,8 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 // 許可するメールアドレスのリスト
 const ALLOWED_EMAILS = [
   "your-email@gmail.com", // TODO: 実際のメールアドレスに変更
-  "kcp.is.revolutionary@gmail.com"
+  "kcp.is.revolutionary@gmail.com",
+  "aoita_n.5@icloud.com"
 ];
 
 export async function GET(request: Request) {
