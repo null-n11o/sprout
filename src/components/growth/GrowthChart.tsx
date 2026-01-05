@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -40,48 +40,64 @@ type GrowthChartProps = {
 
 type ChartType = "height" | "weight";
 
+// サンプルデータ（典型的な乳幼児の成長推移）
+const SAMPLE_DATA = [
+  { monthAge: 0, height: 50.0, weight: 3.0 },
+  { monthAge: 1, height: 54.0, weight: 4.2 },
+  { monthAge: 2, height: 57.5, weight: 5.2 },
+  { monthAge: 3, height: 60.5, weight: 6.0 },
+  { monthAge: 4, height: 63.0, weight: 6.7 },
+  { monthAge: 5, height: 65.0, weight: 7.2 },
+  { monthAge: 6, height: 67.0, weight: 7.7 },
+  { monthAge: 9, height: 71.5, weight: 8.7 },
+  { monthAge: 12, height: 75.0, weight: 9.5 },
+  { monthAge: 18, height: 81.0, weight: 10.5 },
+  { monthAge: 24, height: 86.0, weight: 11.8 },
+];
+
 export function GrowthChart({ records, childList }: GrowthChartProps) {
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<string>("sample");
   const [chartType, setChartType] = useState<ChartType>("height");
 
-  const filteredRecords = selectedChildId
-    ? records.filter((r) => r.child_id === selectedChildId)
-    : records;
+  // 最初の子供がいればそれを選択、なければサンプル
+  useEffect(() => {
+    if (childList.length > 0) {
+      setSelectedTab(childList[0].id);
+    }
+  }, [childList]);
 
-  // データを月齢ベースに変換
-  const chartData = filteredRecords.map((record) => {
-    const monthAge = calculateMonthAge(
-      record.child.birth_date,
-      record.recorded_at
-    );
-    return {
-      monthAge,
-      height: record.height,
-      weight: record.weight,
-      childName: record.child.name,
-      date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
-    };
-  });
+  const isSampleTab = selectedTab === "sample";
 
-  // 月齢でソート
-  chartData.sort((a, b) => a.monthAge - b.monthAge);
+  // 選択されたタブに応じてデータを取得
+  const chartData = isSampleTab
+    ? SAMPLE_DATA.map((d) => ({
+        ...d,
+        childName: "サンプル",
+        date: `${d.monthAge}ヶ月時点`,
+      }))
+    : records
+        .filter((r) => r.child_id === selectedTab)
+        .map((record) => {
+          const monthAge = calculateMonthAge(
+            record.child.birth_date,
+            record.recorded_at
+          );
+          return {
+            monthAge,
+            height: record.height,
+            weight: record.weight,
+            childName: record.child.name,
+            date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
+          };
+        })
+        .sort((a, b) => a.monthAge - b.monthAge);
 
   return (
     <div className="space-y-4">
       {/* フィルター */}
       <div className="flex gap-2 overflow-x-auto py-2">
-        <button
-          onClick={() => setSelectedChildId(null)}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-            selectedChildId === null
-              ? "bg-gray-800 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          全員
-        </button>
         {childList.map((child) => {
-          const isSelected = selectedChildId === child.id;
+          const isSelected = selectedTab === child.id;
           const colorClass =
             child.name === "カイリ"
               ? isSelected
@@ -94,13 +110,23 @@ export function GrowthChart({ records, childList }: GrowthChartProps) {
           return (
             <button
               key={child.id}
-              onClick={() => setSelectedChildId(child.id)}
+              onClick={() => setSelectedTab(child.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${colorClass}`}
             >
               {child.name}
             </button>
           );
         })}
+        <button
+          onClick={() => setSelectedTab("sample")}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            isSampleTab
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          サンプル
+        </button>
       </div>
 
       {/* グラフタイプ切り替え */}
