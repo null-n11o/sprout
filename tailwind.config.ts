@@ -44,9 +44,50 @@ const config: Config = {
           "0%": { transform: "translateY(100%)" },
           "100%": { transform: "translateY(0)" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        pulse: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-3deg)" },
+          "50%": { transform: "rotate(3deg)" },
+        },
+        heartbeat: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.1)" },
+        },
       },
       animation: {
         "slide-up": "slide-up 0.2s ease-out",
+        shimmer: "shimmer 2s infinite",
+        float: "float 3s ease-in-out infinite",
+        pulse: "pulse 2s ease-in-out infinite",
+        wiggle: "wiggle 0.3s ease-in-out",
+        heartbeat: "heartbeat 0.6s ease-in-out",
+      },
+      boxShadow: {
+        soft: "0 2px 8px rgba(0, 0, 0, 0.04)",
+        medium: "0 4px 16px rgba(0, 0, 0, 0.08)",
+        large: "0 8px 30px rgba(0, 0, 0, 0.12)",
+        glow: "0 0 20px rgba(244, 63, 94, 0.3)",
+        "glow-lg": "0 0 40px rgba(244, 63, 94, 0.4)",
+        inner: "inset 0 2px 4px rgba(0, 0, 0, 0.05)",
+        "card-hover": "0 12px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) inset",
+      },
+      backdropBlur: {
+        xs: "2px",
+        "2xl": "40px",
+      },
+      borderRadius: {
+        "4xl": "2rem",
       },
     },
   },

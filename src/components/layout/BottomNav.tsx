@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
+import { transitions } from "@/lib/animations";
 
 const navItems = [
   { href: "/", label: "ホーム", icon: HomeIcon },
@@ -14,26 +16,87 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 border-t border-cream-200 pb-safe">
-      <div className="flex items-center justify-around h-16">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
-                isActive ? "text-mare-500" : "text-gray-400"
-              }`}
-            >
-              <Icon className="w-6 h-6" />
-              <span className="text-xs mt-1">{item.label}</span>
-            </Link>
-          );
-        })}
+    <motion.nav
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ ...transitions.spring, delay: 0.1 }}
+      className="fixed bottom-0 left-0 right-0 z-50 pb-safe"
+    >
+      <div className="mx-4 mb-3 rounded-3xl shadow-large border border-white/30 overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.5) inset",
+        }}
+      >
+        <div className="flex items-center justify-around h-[68px]">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex flex-col items-center justify-center w-full h-full"
+              >
+                <motion.div
+                  className="flex flex-col items-center relative"
+                  whileTap={{ scale: 0.85 }}
+                  transition={transitions.spring}
+                >
+                  {/* Active background pill */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-bg"
+                      className="absolute -inset-x-2 -inset-y-1 bg-gradient-to-br from-mare-100 to-mare-50 rounded-2xl"
+                      transition={transitions.springBouncy}
+                    />
+                  )}
+
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-indicator"
+                      className="absolute -top-2.5 w-1.5 h-1.5 bg-gradient-to-r from-mare-400 to-mare-500 rounded-full shadow-glow"
+                      transition={transitions.springBouncy}
+                    />
+                  )}
+
+                  <motion.div
+                    animate={{
+                      scale: isActive ? 1.15 : 1,
+                      y: isActive ? -1 : 0,
+                    }}
+                    transition={transitions.spring}
+                    className="relative z-10"
+                  >
+                    <Icon
+                      className={`w-6 h-6 transition-colors duration-200 ${
+                        isActive ? "text-mare-500" : "text-gray-400"
+                      }`}
+                    />
+                  </motion.div>
+
+                  <motion.span
+                    animate={{
+                      opacity: isActive ? 1 : 0.5,
+                      scale: isActive ? 1 : 0.9,
+                    }}
+                    transition={transitions.snappy}
+                    className={`relative z-10 text-[11px] mt-1.5 font-semibold tracking-tight ${
+                      isActive ? "text-mare-500" : "text-gray-400"
+                    }`}
+                  >
+                    {item.label}
+                  </motion.span>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }
 

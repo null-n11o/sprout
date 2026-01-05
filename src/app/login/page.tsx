@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Sprout, Sparkles } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -67,23 +69,32 @@ function LoginForm() {
   return (
     <>
       {message && (
-        <div
-          className={`mb-4 p-4 rounded-xl text-sm ${
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className={`mb-5 p-4 rounded-2xl text-sm backdrop-blur-sm ${
             message.type === "success"
-              ? "bg-kairi-50 text-kairi-500"
-              : "bg-red-50 text-red-600 border border-red-200"
+              ? "bg-kairi-100/80 text-kairi-600 border border-kairi-200/50"
+              : "bg-red-50/80 text-red-600 border border-red-200/50"
           }`}
         >
           {message.text}
-        </div>
+        </motion.div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <button
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="card-glass p-7"
+      >
+        <motion.button
           type="button"
           onClick={handleGoogleLogin}
           disabled={googleLoading}
-          className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3.5 bg-white/80 hover:bg-white border border-gray-100 text-gray-700 font-medium rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-soft hover:shadow-medium"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -104,20 +115,20 @@ function LoginForm() {
             />
           </svg>
           {googleLoading ? "接続中..." : "Googleでログイン"}
-        </button>
+        </motion.button>
 
-        <div className="relative my-6">
+        <div className="relative my-7">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
+            <div className="w-full border-t border-gray-200/60"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-400">または</span>
+            <span className="px-4 bg-white/60 backdrop-blur-sm rounded-full text-gray-400">または</span>
           </div>
         </div>
 
         <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-5">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-2.5">
               メールアドレス
             </label>
             <input
@@ -127,39 +138,97 @@ function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-mare-300 focus:ring-2 focus:ring-mare-100 outline-none transition-colors"
+              className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 bg-white/50 focus:border-mare-300 focus:bg-white focus:ring-4 focus:ring-mare-100/50 outline-none transition-all placeholder:text-gray-300"
             />
           </div>
 
-          <button
+          <motion.button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-mare-400 hover:bg-mare-500 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3.5 bg-gradient-to-r from-mare-400 to-mare-500 hover:from-mare-500 hover:to-mare-600 text-white font-semibold rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-soft hover:shadow-glow"
           >
             {loading ? "送信中..." : "メールでログイン"}
-          </button>
+          </motion.button>
         </form>
-      </div>
+      </motion.div>
     </>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-cream-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-mare-500 mb-2">Sprout</h1>
-          <p className="text-gray-500">家族の成長記録</p>
-        </div>
+    <div className="min-h-screen gradient-mesh-login flex items-center justify-center px-4 py-8 overflow-hidden relative">
+      {/* Decorative floating blobs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1 }}
+          className="absolute -top-20 -right-20 w-64 h-64 bg-mare-200/30 blob floating-slow"
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.2 }}
+          className="absolute -bottom-32 -left-20 w-80 h-80 bg-kairi-200/30 blob floating-delayed"
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.4 }}
+          className="absolute top-1/4 -left-10 w-40 h-40 bg-cream-200/40 blob floating-slow"
+          style={{ animationDelay: "1s" }}
+        />
+      </div>
 
-        <Suspense fallback={<div className="bg-white rounded-2xl shadow-sm p-6 animate-pulse h-64" />}>
+      <div className="w-full max-w-sm relative z-10">
+        {/* Logo and title */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-10"
+        >
+          <motion.div
+            className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-mare-400 to-mare-500 shadow-glow mb-5"
+            whileHover={{ rotate: [0, -10, 10, -5, 0], scale: 1.05 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Sprout className="w-10 h-10 text-white" strokeWidth={2.5} />
+          </motion.div>
+          <h1 className="text-4xl font-bold text-gradient-warm mb-3 tracking-tight">
+            Sprout
+          </h1>
+          <div className="flex items-center justify-center gap-2 text-gray-500">
+            <Sparkles className="w-4 h-4 text-mare-300" />
+            <p className="text-base">家族の成長記録</p>
+            <Sparkles className="w-4 h-4 text-kairi-300" />
+          </div>
+        </motion.div>
+
+        <Suspense
+          fallback={
+            <div className="card-glass p-7 animate-pulse">
+              <div className="h-12 bg-gray-200/50 rounded-2xl mb-7" />
+              <div className="h-px bg-gray-200/50 mb-7" />
+              <div className="h-10 bg-gray-200/50 rounded-2xl mb-5" />
+              <div className="h-12 bg-gray-200/50 rounded-2xl" />
+            </div>
+          }
+        >
           <LoginForm />
         </Suspense>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center text-sm text-gray-400 mt-8"
+        >
           招待されたメールアドレスでログインできます
-        </p>
+        </motion.p>
       </div>
     </div>
   );
