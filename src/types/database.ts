@@ -224,6 +224,38 @@ export interface Database {
           },
         ];
       };
+      growth_milestones: {
+        Row: {
+          id: string;
+          child_id: string;
+          content: string;
+          recorded_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          content: string;
+          recorded_at: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          child_id?: string;
+          content?: string;
+          recorded_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "growth_milestones_child_id_fkey";
+            columns: ["child_id"];
+            isOneToOne: false;
+            referencedRelation: "children";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -245,10 +277,12 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Child = Database["public"]["Tables"]["children"]["Row"];
 export type Post = Database["public"]["Tables"]["posts"]["Row"];
 export type GrowthRecord = Database["public"]["Tables"]["growth_records"]["Row"];
+export type GrowthMilestone = Database["public"]["Tables"]["growth_milestones"]["Row"];
 export type Reaction = Database["public"]["Tables"]["reactions"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 
 export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
 export type GrowthRecordInsert = Database["public"]["Tables"]["growth_records"]["Insert"];
+export type GrowthMilestoneInsert = Database["public"]["Tables"]["growth_milestones"]["Insert"];
 export type ReactionInsert = Database["public"]["Tables"]["reactions"]["Insert"];
 export type CommentInsert = Database["public"]["Tables"]["comments"]["Insert"];
