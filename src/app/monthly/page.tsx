@@ -170,7 +170,7 @@ export default function MonthlyPage() {
     <AuthGuard>
       <div className="min-h-screen bg-cream-50">
         <Header />
-        <main className="pt-14 pb-20 px-4">
+        <main className="pt-14 pb-32 px-4">
           <div className="max-w-lg mx-auto py-4">
             <h1 className="text-xl font-bold text-gray-800 mb-4">月の記録</h1>
 

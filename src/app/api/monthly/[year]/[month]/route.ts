@@ -85,11 +85,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 成長記録を取得（最新の1件）
+    // 月の最終日を正確に計算
+    const lastDayOfMonth = new Date(yearNum, monthNum, 0).getDate();
+    const monthStart = `${yearNum}-${String(monthNum).padStart(2, "0")}-01`;
+    const monthEnd = `${yearNum}-${String(monthNum).padStart(2, "0")}-${String(lastDayOfMonth).padStart(2, "0")}`;
+
     let growthQuery = supabase
       .from("growth_records")
       .select("height, weight, recorded_at")
-      .gte("recorded_at", `${yearNum}-${String(monthNum).padStart(2, "0")}-01`)
-      .lte("recorded_at", `${yearNum}-${String(monthNum).padStart(2, "0")}-31`)
+      .gte("recorded_at", monthStart)
+      .lte("recorded_at", monthEnd)
       .order("recorded_at", { ascending: false })
       .limit(1);
 
