@@ -85,11 +85,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // 成長記録を取得（最新の1件）
+    // LIKE パターンで月を指定（例: "2026-01%"）
+    const monthPattern = `${yearNum}-${String(monthNum).padStart(2, "0")}%`;
+
     let growthQuery = supabase
       .from("growth_records")
       .select("height, weight, recorded_at")
-      .gte("recorded_at", `${yearNum}-${String(monthNum).padStart(2, "0")}-01`)
-      .lte("recorded_at", `${yearNum}-${String(monthNum).padStart(2, "0")}-31`)
+      .like("recorded_at", monthPattern)
       .order("recorded_at", { ascending: false })
       .limit(1);
 
