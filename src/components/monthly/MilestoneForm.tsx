@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { slideInFromBottom, transitions } from "@/lib/animations";
+import { scaleIn, transitions } from "@/lib/animations";
 
 type MilestoneFormProps = {
   isOpen: boolean;
@@ -47,15 +47,15 @@ export function MilestoneForm({ isOpen, onClose, onSubmit }: MilestoneFormProps)
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center"
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={handleBackdropClick}
         >
           <motion.div
-            className="bg-white w-full max-w-lg rounded-t-2xl p-6"
-            variants={slideInFromBottom}
+            className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl"
+            variants={scaleIn}
             initial="initial"
             animate="animate"
             exit="exit"
