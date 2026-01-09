@@ -84,8 +84,8 @@ export function GrowthChart({ records, childList }: GrowthChartProps) {
           );
           return {
             monthAge,
-            height: record.height,
-            weight: record.weight,
+            height: Number(record.height),
+            weight: Number(record.weight),
             childName: record.child.name,
             date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
           };
