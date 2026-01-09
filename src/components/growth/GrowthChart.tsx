@@ -69,28 +69,45 @@ export function GrowthChart({ records, childList }: GrowthChartProps) {
   const isSampleTab = selectedTab === "sample";
 
   // 選択されたタブに応じてデータを取得
+  // 同じ月齢に複数レコードがある場合は最新のものを使用
   const chartData = isSampleTab
     ? SAMPLE_DATA.map((d) => ({
         ...d,
         childName: "サンプル",
         date: `${d.monthAge}ヶ月時点`,
+        recordedAt: "",
       }))
-    : records
-        .filter((r) => r.child_id === selectedTab)
-        .map((record) => {
-          const monthAge = calculateMonthAge(
-            record.child.birth_date,
-            record.recorded_at
-          );
-          return {
-            monthAge,
-            height: Number(record.height),
-            weight: Number(record.weight),
-            childName: record.child.name,
-            date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
-          };
-        })
-        .sort((a, b) => a.monthAge - b.monthAge);
+    : (() => {
+        const filteredRecords = records
+          .filter((r) => r.child_id === selectedTab)
+          .map((record) => {
+            const monthAge = calculateMonthAge(
+              record.child.birth_date,
+              record.recorded_at
+            );
+            return {
+              monthAge,
+              height: Number(record.height),
+              weight: Number(record.weight),
+              childName: record.child.name,
+              date: new Date(record.recorded_at).toLocaleDateString("ja-JP"),
+              recordedAt: record.recorded_at,
+            };
+          });
+
+        // 月齢ごとに最新のレコードのみを保持
+        const latestByMonthAge = new Map<number, (typeof filteredRecords)[0]>();
+        for (const record of filteredRecords) {
+          const existing = latestByMonthAge.get(record.monthAge);
+          if (!existing || record.recordedAt > existing.recordedAt) {
+            latestByMonthAge.set(record.monthAge, record);
+          }
+        }
+
+        return Array.from(latestByMonthAge.values()).sort(
+          (a, b) => a.monthAge - b.monthAge
+        );
+      })();
 
   return (
     <div className="space-y-4">
