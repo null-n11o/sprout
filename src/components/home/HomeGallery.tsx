@@ -1,13 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  PanInfo,
+} from "framer-motion";
 import { ChildFilter } from "@/components/timeline/ChildFilter";
 import { PhotoGrid } from "@/components/monthly/PhotoGrid";
 import { HeroImage, type FeaturedImage } from "@/components/home/HeroImage";
 import { slideUp, transitions } from "@/lib/animations";
 import Image from "next/image";
 import { Calendar, Grid3X3 } from "lucide-react";
+
+// スワイプのしきい値（px）
+const SWIPE_THRESHOLD = 50;
 
 type Child = {
   id: string;
@@ -51,6 +59,29 @@ export function HomeGallery({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // スワイプアニメーション用の状態
+  const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(
+    null
+  );
+  const dragX = useMotionValue(0);
+  const constraintsRef = useRef(null);
+
+  const fetchAvailableMonths = useCallback(async () => {
+    try {
+      const childParam = selectedChildId ? `?child_id=${selectedChildId}` : "";
+      const res = await fetch(`/api/monthly/${currentYear}${childParam}`);
+
+      if (!res.ok) {
+        return [];
+      }
+
+      const data = await res.json();
+      return data.availableMonths || [];
+    } catch {
+      return [];
+    }
+  }, [currentYear, selectedChildId]);
+
   const fetchMonthlyData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -58,9 +89,10 @@ export function HomeGallery({
     try {
       const childParam = selectedChildId ? `?child_id=${selectedChildId}` : "";
 
-      const [featuredRes, monthlyRes] = await Promise.all([
+      const [featuredRes, monthlyRes, months] = await Promise.all([
         fetch(`/api/featured/${currentYear}/${currentMonth}${childParam}`),
         fetch(`/api/monthly/${currentYear}/${currentMonth}${childParam}`),
+        fetchAvailableMonths(),
       ]);
 
       if (!featuredRes.ok || !monthlyRes.ok) {
@@ -74,13 +106,14 @@ export function HomeGallery({
 
       setFeaturedImage(featuredData.featured);
       setPhotos(monthlyData.photos || []);
+      setAvailableMonths(months);
     } catch (err) {
       setError("データの取得に失敗しました");
       console.error("Fetch error:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear, currentMonth, selectedChildId]);
+  }, [currentYear, currentMonth, selectedChildId, fetchAvailableMonths]);
 
   const fetchYearsData = useCallback(async () => {
     setIsLoading(true);
@@ -96,21 +129,13 @@ export function HomeGallery({
 
       const data = await res.json();
       setYears(data.years || []);
-
-      // Extract available months from years data
-      const allYears = (data.years || []).map(
-        (y: YearData) => y.year
-      ) as number[];
-      setAvailableMonths(
-        allYears.includes(currentYear) ? Array.from({ length: 12 }, (_, i) => i + 1) : []
-      );
     } catch (err) {
       setError("データの取得に失敗しました");
       console.error("Fetch error:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedChildId, currentYear]);
+  }, [selectedChildId]);
 
   useEffect(() => {
     if (viewMode === "monthly") {
@@ -150,6 +175,63 @@ export function HomeGallery({
     setSelectedChildId(childId);
   };
 
+  // スワイプ終了時のハンドラー
+  const handleDragEnd = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
+
+    // しきい値を超えたか、速度が十分大きい場合に月移動
+    if (Math.abs(offset) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
+      if (offset < 0) {
+        // 左スワイプ → 次の月へ
+        setSlideDirection("left");
+        handleMonthChange(currentMonth + 1);
+      } else {
+        // 右スワイプ → 前の月へ
+        setSlideDirection("right");
+        handleMonthChange(currentMonth - 1);
+      }
+    }
+
+    // ドラッグ位置をリセット
+    dragX.set(0);
+  };
+
+  // スライドアニメーションのバリアント
+  const slideVariants = {
+    initial: (direction: "left" | "right" | null) => ({
+      x: direction === "left" ? 300 : direction === "right" ? -300 : 0,
+      opacity: 0,
+    }),
+    animate: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        x: { type: "spring" as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 },
+      },
+    },
+    exit: (direction: "left" | "right" | null) => ({
+      x: direction === "left" ? -300 : direction === "right" ? 300 : 0,
+      opacity: 0,
+      transition: {
+        x: { type: "spring" as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.2 },
+      },
+    }),
+  };
+
+  // 月変更後にスライド方向をリセット
+  useEffect(() => {
+    if (slideDirection !== null) {
+      const timer = setTimeout(() => setSlideDirection(null), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [slideDirection]);
+
   // Filter photos to exclude the featured image
   const gridPhotos = featuredImage
     ? photos.filter((p) => p.id !== featuredImage.id)
@@ -185,21 +267,42 @@ export function HomeGallery({
               onYearlyHubClick={handleYearlyHubClick}
             />
 
-            {isLoading ? (
-              <LoadingState />
-            ) : error ? (
-              <ErrorState message={error} onRetry={fetchMonthlyData} />
-            ) : (
-              <>
-                {/* Hero Image */}
-                <HeroImage featured={featuredImage} />
+            {/* Swipeable Content */}
+            <div ref={constraintsRef} className="overflow-hidden">
+              <AnimatePresence mode="wait" custom={slideDirection}>
+                <motion.div
+                  key={`${currentYear}-${currentMonth}`}
+                  data-testid="swipeable-content"
+                  custom={slideDirection}
+                  variants={slideVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={handleDragEnd}
+                  style={{ x: dragX }}
+                  className="space-y-4 touch-pan-y"
+                >
+                  {isLoading ? (
+                    <LoadingState />
+                  ) : error ? (
+                    <ErrorState message={error} onRetry={fetchMonthlyData} />
+                  ) : (
+                    <>
+                      {/* Hero Image */}
+                      <HeroImage featured={featuredImage} />
 
-                {/* Photo Grid */}
-                <div data-testid="photo-grid">
-                  <PhotoGrid photos={gridPhotos} />
-                </div>
-              </>
-            )}
+                      {/* Photo Grid */}
+                      <div data-testid="photo-grid">
+                        <PhotoGrid photos={gridPhotos} />
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -236,6 +339,7 @@ interface MonthTabsProps {
 function MonthTabs({
   year,
   currentMonth,
+  availableMonths,
   onMonthChange,
   onYearlyHubClick,
 }: MonthTabsProps) {
@@ -243,35 +347,45 @@ function MonthTabs({
 
   return (
     <div data-testid="month-tabs" className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-gray-800 flex-1">
           {year}年{currentMonth}月
         </h2>
-        <button
-          data-testid="yearly-hub-button"
-          onClick={onYearlyHubClick}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-        >
-          <Calendar className="w-4 h-4" />
-          年別表示
-        </button>
       </div>
 
       <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+        {/* 左端に「全年表示」ボタン（Yearly Hub）を配置 */}
+        <motion.button
+          data-testid="yearly-hub-button"
+          onClick={onYearlyHubClick}
+          whileTap={{ scale: 0.95 }}
+          transition={transitions.spring}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors whitespace-nowrap flex-shrink-0"
+        >
+          <Calendar className="w-4 h-4" />
+          年別
+        </motion.button>
+
         {months.map((month) => {
           const isSelected = month === currentMonth;
+          const isAvailable = availableMonths.length === 0 || availableMonths.includes(month);
+
           return (
             <motion.button
               key={month}
               data-testid={`month-tab-${month}`}
               data-selected={isSelected}
+              data-available={isAvailable}
               onClick={() => onMonthChange(month)}
-              whileTap={{ scale: 0.95 }}
+              disabled={!isAvailable}
+              whileTap={isAvailable ? { scale: 0.95 } : undefined}
               transition={transitions.spring}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
                 isSelected
                   ? "bg-gray-800 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : isAvailable
+                    ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-gray-50 text-gray-300 cursor-not-allowed"
               }`}
             >
               {month}月
