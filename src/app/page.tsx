@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Header, BottomNav } from "@/components/layout";
-import { AuthGuard, useAuth } from "@/components/auth";
-import { TimelineFeed } from "@/components/timeline";
+import { AuthGuard } from "@/components/auth";
+import { HomeGallery } from "@/components/home";
 import { Sprout } from "lucide-react";
 
 type Child = {
@@ -15,9 +15,13 @@ type Child = {
 };
 
 export default function Home() {
-  const { user } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Get current year and month for initial display
+  const now = new Date();
+  const initialYear = now.getFullYear();
+  const initialMonth = now.getMonth() + 1;
 
   useEffect(() => {
     async function fetchChildren() {
@@ -64,7 +68,11 @@ export default function Home() {
                 <p className="text-sm text-gray-400 font-medium">読み込み中...</p>
               </motion.div>
             ) : (
-              <TimelineFeed childList={children} currentUserId={user?.id ?? ""} />
+              <HomeGallery
+                childList={children}
+                initialYear={initialYear}
+                initialMonth={initialMonth}
+              />
             )}
           </div>
         </motion.main>
