@@ -1,0 +1,109 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const childId = searchParams.get("child_id");
+
+  try {
+    // 画像が存在する年の一覧を取得
+    let postsQuery = supabase
+      .from("posts")
+      .select("id, media_url, created_at")
+      .eq("media_type", "image");
+
+    if (childId) {
+      postsQuery = postsQuery.eq("child_id", childId);
+    }
+
+    const { data: posts, error: postsError } = await postsQuery;
+
+    if (postsError) {
+      console.error("Posts fetch error:", postsError);
+      return NextResponse.json(
+        { error: "Failed to fetch posts" },
+        { status: 500 }
+      );
+    }
+
+    if (!posts || posts.length === 0) {
+      return NextResponse.json({ years: [] });
+    }
+
+    // 年ごとにグループ化
+    const yearMap = new Map<
+      number,
+      { posts: typeof posts; photoCount: number }
+    >();
+
+    for (const post of posts) {
+      const year = new Date(post.created_at).getFullYear();
+      if (!yearMap.has(year)) {
+        yearMap.set(year, { posts: [], photoCount: 0 });
+      }
+      const yearData = yearMap.get(year)!;
+      yearData.posts.push(post);
+      yearData.photoCount++;
+    }
+
+    // 各年の代表サムネイル（年内で最もLike数が多い画像）を取得
+    const yearsWithThumbnails = await Promise.all(
+      Array.from(yearMap.entries()).map(async ([year, data]) => {
+        // 各投稿のリアクション数を取得
+        const postsWithReactions = await Promise.all(
+          data.posts.map(async (post) => {
+            const { count } = await supabase
+              .from("reactions")
+              .select("*", { count: "exact", head: true })
+              .eq("post_id", post.id);
+
+            return {
+              ...post,
+              reactionCount: count ?? 0,
+            };
+          })
+        );
+
+        // リアクション数でソート（多い順）、同数なら新しい順
+        postsWithReactions.sort((a, b) => {
+          if (b.reactionCount !== a.reactionCount) {
+            return b.reactionCount - a.reactionCount;
+          }
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        });
+
+        const thumbnail = postsWithReactions[0];
+
+        return {
+          year,
+          thumbnailUrl: thumbnail?.media_url ?? null,
+          photoCount: data.photoCount,
+        };
+      })
+    );
+
+    // 年の降順でソート
+    yearsWithThumbnails.sort((a, b) => b.year - a.year);
+
+    return NextResponse.json({ years: yearsWithThumbnails });
+  } catch (error) {
+    console.error("Years fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch years" },
+      { status: 500 }
+    );
+  }
+}
