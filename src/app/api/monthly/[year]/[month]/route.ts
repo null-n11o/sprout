@@ -133,11 +133,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({
-      photos: photos || [],
-      growthRecord: growthRecords?.[0] || null,
-      milestones: milestones || [],
-    });
+    // キャッシュヘッダーを設定（60秒間キャッシュ、stale-while-revalidate）
+    return NextResponse.json(
+      {
+        photos: photos || [],
+        growthRecord: growthRecords?.[0] || null,
+        milestones: milestones || [],
+      },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Monthly data fetch error:", error);
     return NextResponse.json(

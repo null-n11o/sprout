@@ -80,7 +80,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!posts || posts.length === 0) {
-      return NextResponse.json({ featured: null });
+      return NextResponse.json(
+        { featured: null },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+          },
+        }
+      );
     }
 
     // 各投稿のリアクション数を取得
@@ -111,16 +118,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const featured = postsWithReactions[0];
     const child = featured.child as { id: string; name: string };
 
-    return NextResponse.json({
-      featured: {
-        id: featured.id,
-        mediaUrl: featured.media_url,
-        childId: child.id,
-        childName: child.name,
-        createdAt: featured.created_at,
-        reactionCount: featured.reactionCount,
+    // キャッシュヘッダーを設定（60秒間キャッシュ、stale-while-revalidate）
+    return NextResponse.json(
+      {
+        featured: {
+          id: featured.id,
+          mediaUrl: featured.media_url,
+          childId: child.id,
+          childName: child.name,
+          createdAt: featured.created_at,
+          reactionCount: featured.reactionCount,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Featured image fetch error:", error);
     return NextResponse.json(

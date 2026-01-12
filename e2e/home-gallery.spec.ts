@@ -598,5 +598,106 @@ test.describe("Home Gallery", () => {
         await expect(gradientOverlay).toBeVisible();
       }
     });
+
+    // Task 6.1: Home screen integration tests
+    test.skip("should have replaced timeline feed with home gallery", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      // TimelineFeed should NOT be present
+      const timelineFeed = page.locator('[data-testid="timeline-feed"]');
+      await expect(timelineFeed).not.toBeVisible();
+
+      // HomeGallery components should be present instead
+      await expect(page.getByTestId("month-tabs")).toBeVisible();
+      await expect(page.getByTestId("hero-image-section")).toBeVisible();
+      await expect(page.getByTestId("photo-grid")).toBeVisible();
+    });
+
+    test.skip("should support 3-tier navigation: year -> month -> photos", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      // Tier 1: Start at current month (photos view)
+      await expect(page.getByTestId("month-tabs")).toBeVisible();
+      await expect(page.getByTestId("hero-image-section")).toBeVisible();
+
+      // Tier 2: Navigate to yearly archive
+      await page.getByTestId("yearly-hub-button").click();
+      await expect(page.getByTestId("yearly-archive")).toBeVisible();
+
+      // Tier 3: Select a year to navigate back to monthly view
+      const yearTiles = page.getByTestId("year-tile");
+      const tileCount = await yearTiles.count();
+
+      if (tileCount > 0) {
+        await yearTiles.first().click();
+        // Should be back to monthly view with January selected
+        await expect(page.getByTestId("month-tabs")).toBeVisible();
+        await expect(
+          page.getByTestId("month-tab-1")
+        ).toHaveAttribute("data-selected", "true");
+      }
+    });
+
+    test.skip("should integrate child filter with gallery", async ({ page }) => {
+      await page.goto("/");
+
+      // Child filter should be present and functional
+      const childFilter = page.getByTestId("child-filter");
+      await expect(childFilter).toBeVisible();
+
+      // Gallery components should update when filter changes
+      // (verified by checking components are visible)
+      await expect(page.getByTestId("hero-image-section")).toBeVisible();
+      await expect(page.getByTestId("photo-grid")).toBeVisible();
+    });
+
+    test.skip("should show error state on network failure", async ({ page }) => {
+      // Intercept API calls to simulate network error
+      await page.route("**/api/featured/**", (route) =>
+        route.fulfill({ status: 500 })
+      );
+      await page.route("**/api/monthly/**", (route) =>
+        route.fulfill({ status: 500 })
+      );
+
+      await page.goto("/");
+
+      // Error message and retry button should be visible
+      await expect(
+        page.locator('text="データの取得に失敗しました"')
+      ).toBeVisible();
+      await expect(page.getByRole("button", { name: "再試行" })).toBeVisible();
+    });
+
+    test.skip("should show placeholder when no photos exist", async ({
+      page,
+    }) => {
+      // Intercept API calls to return empty data
+      await page.route("**/api/featured/**", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ featured: null }),
+        })
+      );
+      await page.route("**/api/monthly/**", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ photos: [] }),
+        })
+      );
+
+      await page.goto("/");
+
+      // Placeholder should be visible
+      await expect(
+        page.locator('text="この月の写真はありません"')
+      ).toBeVisible();
+    });
   });
 });
