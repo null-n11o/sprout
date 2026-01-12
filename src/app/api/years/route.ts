@@ -38,7 +38,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (!posts || posts.length === 0) {
-      return NextResponse.json({ years: [] });
+      return NextResponse.json(
+        { years: [] },
+        {
+          headers: {
+            "Cache-Control": "private, max-age=300, stale-while-revalidate=600",
+          },
+        }
+      );
     }
 
     // 年ごとにグループ化
@@ -98,7 +105,15 @@ export async function GET(request: NextRequest) {
     // 年の降順でソート
     yearsWithThumbnails.sort((a, b) => b.year - a.year);
 
-    return NextResponse.json({ years: yearsWithThumbnails });
+    // キャッシュヘッダーを設定（5分間キャッシュ、stale-while-revalidate）
+    return NextResponse.json(
+      { years: yearsWithThumbnails },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
     console.error("Years fetch error:", error);
     return NextResponse.json(

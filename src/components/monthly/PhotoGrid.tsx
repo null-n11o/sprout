@@ -51,6 +51,8 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
               fill
               className="object-cover"
               sizes="(max-width: 768px) 33vw, 200px"
+              loading="lazy"
+              placeholder="empty"
             />
           </motion.button>
         ))}

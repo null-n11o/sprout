@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   motion,
   AnimatePresence,
@@ -13,6 +13,22 @@ import { HeroImage, type FeaturedImage } from "@/components/home/HeroImage";
 import { YearlyArchive, type YearData } from "@/components/home/YearlyArchive";
 import { slideUp, transitions } from "@/lib/animations";
 import { Calendar } from "lucide-react";
+
+// キャッシュのキーを生成
+function getCacheKey(year: number, month: number, childId: string | null) {
+  return `${year}-${month}-${childId || "all"}`;
+}
+
+// キャッシュされたデータの型
+type CachedMonthlyData = {
+  featured: FeaturedImage;
+  photos: Photo[];
+  availableMonths: number[];
+  timestamp: number;
+};
+
+// キャッシュの有効期限（60秒）
+const CACHE_TTL = 60 * 1000;
 
 // スワイプのしきい値（px）
 const SWIPE_THRESHOLD = 50;
@@ -60,6 +76,10 @@ export function HomeGallery({
   const dragX = useMotionValue(0);
   const constraintsRef = useRef(null);
 
+  // クライアントサイドキャッシュ
+  const monthlyCache = useRef<Map<string, CachedMonthlyData>>(new Map());
+  const yearsCache = useRef<{ data: YearData[]; childId: string | null; timestamp: number } | null>(null);
+
   const fetchAvailableMonths = useCallback(async () => {
     try {
       const childParam = selectedChildId ? `?child_id=${selectedChildId}` : "";
@@ -77,6 +97,18 @@ export function HomeGallery({
   }, [currentYear, selectedChildId]);
 
   const fetchMonthlyData = useCallback(async () => {
+    const cacheKey = getCacheKey(currentYear, currentMonth, selectedChildId);
+    const cached = monthlyCache.current.get(cacheKey);
+
+    // キャッシュが有効な場合はキャッシュから取得
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      setFeaturedImage(cached.featured);
+      setPhotos(cached.photos);
+      setAvailableMonths(cached.availableMonths);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -98,8 +130,19 @@ export function HomeGallery({
         monthlyRes.json(),
       ]);
 
-      setFeaturedImage(featuredData.featured);
-      setPhotos(monthlyData.photos || []);
+      const featured = featuredData.featured;
+      const photosData = monthlyData.photos || [];
+
+      // キャッシュに保存
+      monthlyCache.current.set(cacheKey, {
+        featured,
+        photos: photosData,
+        availableMonths: months,
+        timestamp: Date.now(),
+      });
+
+      setFeaturedImage(featured);
+      setPhotos(photosData);
       setAvailableMonths(months);
     } catch (err) {
       setError("データの取得に失敗しました");
@@ -110,6 +153,18 @@ export function HomeGallery({
   }, [currentYear, currentMonth, selectedChildId, fetchAvailableMonths]);
 
   const fetchYearsData = useCallback(async () => {
+    // キャッシュが有効な場合はキャッシュから取得
+    const cached = yearsCache.current;
+    if (
+      cached &&
+      cached.childId === selectedChildId &&
+      Date.now() - cached.timestamp < CACHE_TTL * 5 // 年別データは5分間キャッシュ
+    ) {
+      setYears(cached.data);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -122,7 +177,16 @@ export function HomeGallery({
       }
 
       const data = await res.json();
-      setYears(data.years || []);
+      const yearsData = data.years || [];
+
+      // キャッシュに保存
+      yearsCache.current = {
+        data: yearsData,
+        childId: selectedChildId,
+        timestamp: Date.now(),
+      };
+
+      setYears(yearsData);
     } catch (err) {
       setError("データの取得に失敗しました");
       console.error("Fetch error:", err);
@@ -166,6 +230,11 @@ export function HomeGallery({
   };
 
   const handleChildSelect = (childId: string | null) => {
+    // 子どもフィルター変更時はキャッシュをクリア（新鮮なデータを取得するため）
+    if (childId !== selectedChildId) {
+      monthlyCache.current.clear();
+      yearsCache.current = null;
+    }
     setSelectedChildId(childId);
   };
 
