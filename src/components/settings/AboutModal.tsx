@@ -13,7 +13,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="アプリについて">
       <div className="p-4">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-coral-300 to-mint-300 rounded-2xl flex items-center justify-center mb-3">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-mare-300 to-kairi-300 rounded-2xl flex items-center justify-center mb-3">
             <Sprout className="w-8 h-8 text-white" />
           </div>
           <h3 className="text-xl font-bold text-gray-800">Sprout</h3>
@@ -47,7 +47,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
 
         <div className="mt-4 flex items-center justify-center gap-1 text-gray-400">
           <span className="text-sm">Made with</span>
-          <Heart className="w-4 h-4 fill-coral-400 text-coral-400" />
+          <Heart className="w-4 h-4 fill-mare-400 text-mare-400" />
           <span className="text-sm">for the family</span>
         </div>
       </div>

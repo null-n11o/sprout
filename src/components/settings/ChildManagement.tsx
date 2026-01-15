@@ -125,8 +125,8 @@ export function ChildManagement({ isOpen, onClose }: ChildManagementProps) {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       child.gender === "female"
-                        ? "bg-coral-100 text-coral-500"
-                        : "bg-mint-100 text-mint-500"
+                        ? "bg-mare-100 text-mare-500"
+                        : "bg-kairi-100 text-kairi-500"
                     }`}
                   >
                     <Baby className="w-5 h-5" />
@@ -160,7 +160,7 @@ export function ChildManagement({ isOpen, onClose }: ChildManagementProps) {
 
           <button
             onClick={handleAddChild}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-coral-400 text-white rounded-xl font-medium hover:bg-coral-500 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mare-400 text-white rounded-xl font-medium hover:bg-mare-500 transition-colors"
           >
             <Plus className="w-5 h-5" />
             子供を追加

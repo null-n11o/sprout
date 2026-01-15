@@ -107,7 +107,7 @@ export function ChildEditModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="名前を入力"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral-300 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-mare-300 focus:border-transparent"
           />
         </div>
 
@@ -119,7 +119,7 @@ export function ChildEditModal({
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-coral-300 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-mare-300 focus:border-transparent"
           />
         </div>
 
@@ -133,7 +133,7 @@ export function ChildEditModal({
               onClick={() => setGender("male")}
               className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${
                 gender === "male"
-                  ? "bg-mint-400 text-white"
+                  ? "bg-kairi-400 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -144,7 +144,7 @@ export function ChildEditModal({
               onClick={() => setGender("female")}
               className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${
                 gender === "female"
-                  ? "bg-coral-400 text-white"
+                  ? "bg-mare-400 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -164,7 +164,7 @@ export function ChildEditModal({
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 px-4 py-3 bg-coral-400 text-white rounded-xl font-medium hover:bg-coral-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-mare-400 text-white rounded-xl font-medium hover:bg-mare-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
             {isEditing ? "保存" : "追加"}
