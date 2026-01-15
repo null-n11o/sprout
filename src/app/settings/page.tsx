@@ -1,13 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header, BottomNav } from "@/components/layout";
 import { AuthGuard, useAuth } from "@/components/auth";
-import { LogOut, User, Baby, Shield, Info, ChevronRight } from "lucide-react";
+import {
+  ProfileEditModal,
+  ChildManagement,
+  AboutModal,
+} from "@/components/settings";
+import { LogOut, User, Baby, Info, ChevronRight } from "lucide-react";
+
+interface Profile {
+  id: string;
+  name: string;
+  email?: string;
+}
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  // Modal states
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isChildModalOpen, setIsChildModalOpen] = useState(false);
+  const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const response = await fetch("/api/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data.profile);
+      }
+    } catch (error) {
+      console.error("Profile fetch error:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, fetchProfile]);
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -20,30 +55,26 @@ export default function SettingsPage() {
     }
   };
 
+  const displayName = profile?.name || user?.email?.split("@")[0] || "ユーザー";
+
   const menuItems = [
     {
       icon: User,
       label: "アカウント情報",
-      description: user?.email || "メールアドレス未設定",
-      onClick: () => {},
+      description: displayName,
+      onClick: () => setIsProfileModalOpen(true),
     },
     {
       icon: Baby,
       label: "子供の管理",
       description: "子供の追加・編集",
-      onClick: () => {},
-    },
-    {
-      icon: Shield,
-      label: "プライバシー",
-      description: "プライバシー設定",
-      onClick: () => {},
+      onClick: () => setIsChildModalOpen(true),
     },
     {
       icon: Info,
       label: "アプリについて",
       description: "バージョン 0.1.0",
-      onClick: () => {},
+      onClick: () => setIsAboutModalOpen(true),
     },
   ];
 
@@ -91,6 +122,25 @@ export default function SettingsPage() {
         </main>
         <BottomNav />
       </div>
+
+      {/* Modals */}
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentName={displayName}
+        currentEmail={user?.email || ""}
+        onUpdate={fetchProfile}
+      />
+
+      <ChildManagement
+        isOpen={isChildModalOpen}
+        onClose={() => setIsChildModalOpen(false)}
+      />
+
+      <AboutModal
+        isOpen={isAboutModalOpen}
+        onClose={() => setIsAboutModalOpen(false)}
+      />
     </AuthGuard>
   );
 }
