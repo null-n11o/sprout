@@ -13,23 +13,24 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: children, error } = await supabase
-    .from("children")
-    .select("id, name, birth_date, avatar_url, gender")
-    .order("birth_date", { ascending: true });
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
   if (error) {
-    console.error("Children fetch error:", error);
+    console.error("Profile fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch children" },
+      { error: "Failed to fetch profile" },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({ children });
+  return NextResponse.json({ profile });
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   const supabase = await createClient();
 
   const {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, birth_date, gender, avatar_url } = body;
+  const { name, avatar_url } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json(
@@ -51,31 +52,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!birth_date) {
-    return NextResponse.json(
-      { error: "Birth date is required" },
-      { status: 400 }
-    );
-  }
-
-  const { data: child, error } = await supabase
-    .from("children")
-    .insert({
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .update({
       name: name.trim(),
-      birth_date,
-      gender: gender || null,
       avatar_url: avatar_url || null,
     })
+    .eq("id", user.id)
     .select()
     .single();
 
   if (error) {
-    console.error("Child create error:", error);
+    console.error("Profile update error:", error);
     return NextResponse.json(
-      { error: "Failed to create child" },
+      { error: "Failed to update profile" },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({ child }, { status: 201 });
+  return NextResponse.json({ profile });
 }
