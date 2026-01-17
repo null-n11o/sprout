@@ -2,27 +2,27 @@
 
 ## Tasks
 
-- [ ] 1. データベーススキーマのセットアップ
-- [ ] 1.1 家族メンバーテーブルの作成
+- [x] 1. データベーススキーマのセットアップ
+- [x] 1.1 家族メンバーテーブルの作成
   - family_role enum型を定義（mother, father, grandmother_paternal, grandmother_maternal, grandfather_paternal, grandfather_maternal, uncle_aunt, other）
   - family_membersテーブルを作成（user_id, role, custom_role_name, role_confirmed, joined_at）
   - role_confirmedフラグで移行ユーザーの初回ログイン検出に対応
   - user_idにUNIQUE制約を設定
   - _Requirements: 2.2, 6.1_
 
-- [ ] 1.2 (P) 招待コードテーブルの作成
+- [x] 1.2 (P) 招待コードテーブルの作成
   - family_invitationsテーブルを作成（code, created_by, expires_at, used_count, max_uses, is_active）
   - codeにUNIQUE制約とインデックスを設定
   - expires_atにインデックスを設定（有効期限チェック用）
   - _Requirements: 1.1, 1.2_
 
-- [ ] 1.3 (P) 投稿タグテーブルの作成
+- [x] 1.3 (P) 投稿タグテーブルの作成
   - post_tagsテーブルを作成（post_id, member_id）
   - post_id + member_idにUNIQUE制約を設定
   - member_idにインデックスを設定（フィルタリング高速化）
   - _Requirements: 4.3_
 
-- [ ] 1.4 RLSポリシーの設定
+- [x] 1.4 RLSポリシーの設定
   - family_members: 全メンバー閲覧可、自分のみ挿入・更新可
   - family_invitations: 全メンバー閲覧可、認証済みユーザーのみ作成可
   - post_tags: 全メンバー閲覧可、投稿者のみ編集可

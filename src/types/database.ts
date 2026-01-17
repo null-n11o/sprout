@@ -6,6 +6,17 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+// Family role enum type
+export type FamilyRole =
+  | "mother"
+  | "father"
+  | "grandmother_paternal"
+  | "grandmother_maternal"
+  | "grandfather_paternal"
+  | "grandfather_maternal"
+  | "uncle_aunt"
+  | "other";
+
 export interface Database {
   public: {
     Tables: {
@@ -256,6 +267,124 @@ export interface Database {
           },
         ];
       };
+      family_members: {
+        Row: {
+          id: string;
+          user_id: string;
+          role: FamilyRole;
+          custom_role_name: string | null;
+          role_confirmed: boolean;
+          joined_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role?: FamilyRole;
+          custom_role_name?: string | null;
+          role_confirmed?: boolean;
+          joined_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role?: FamilyRole;
+          custom_role_name?: string | null;
+          role_confirmed?: boolean;
+          joined_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "family_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      family_invitations: {
+        Row: {
+          id: string;
+          code: string;
+          created_by: string;
+          expires_at: string;
+          used_count: number;
+          max_uses: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          created_by: string;
+          expires_at: string;
+          used_count?: number;
+          max_uses?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          created_by?: string;
+          expires_at?: string;
+          used_count?: number;
+          max_uses?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "family_invitations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      post_tags: {
+        Row: {
+          id: string;
+          post_id: string;
+          member_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          member_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          member_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "post_tags_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_tags_member_id_fkey";
+            columns: ["member_id"];
+            isOneToOne: false;
+            referencedRelation: "family_members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -264,7 +393,7 @@ export interface Database {
       [_ in never]: never;
     };
     Enums: {
-      [_ in never]: never;
+      family_role: FamilyRole;
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -281,8 +410,15 @@ export type GrowthMilestone = Database["public"]["Tables"]["growth_milestones"][
 export type Reaction = Database["public"]["Tables"]["reactions"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 
+export type FamilyMember = Database["public"]["Tables"]["family_members"]["Row"];
+export type FamilyInvitation = Database["public"]["Tables"]["family_invitations"]["Row"];
+export type PostTag = Database["public"]["Tables"]["post_tags"]["Row"];
+
 export type PostInsert = Database["public"]["Tables"]["posts"]["Insert"];
 export type GrowthRecordInsert = Database["public"]["Tables"]["growth_records"]["Insert"];
 export type GrowthMilestoneInsert = Database["public"]["Tables"]["growth_milestones"]["Insert"];
 export type ReactionInsert = Database["public"]["Tables"]["reactions"]["Insert"];
 export type CommentInsert = Database["public"]["Tables"]["comments"]["Insert"];
+export type FamilyMemberInsert = Database["public"]["Tables"]["family_members"]["Insert"];
+export type FamilyInvitationInsert = Database["public"]["Tables"]["family_invitations"]["Insert"];
+export type PostTagInsert = Database["public"]["Tables"]["post_tags"]["Insert"];
