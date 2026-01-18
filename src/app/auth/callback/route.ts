@@ -6,6 +6,7 @@ import { validateInvitationResult, type Invitation } from "@/lib/api/invitations
 const ALLOWED_EMAILS = [
   "your-email@gmail.com", // TODO: 実際のメールアドレスに変更
   "kcp.is.revolutionary@gmail.com",
+  "nakano.kentaro7@gmail.com",
   "aoita_n.5@icloud.com",
   "aoitanman.5@gmail.com"
 ];
