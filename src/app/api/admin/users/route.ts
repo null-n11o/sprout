@@ -20,6 +20,15 @@ export async function GET() {
   }
 
   try {
+    // 環境変数の確認
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is not set");
+      return NextResponse.json(
+        { error: "Server configuration error: Missing service role key" },
+        { status: 500 }
+      );
+    }
+
     const adminClient = createAdminClient();
 
     // auth.usersから全ユーザーを取得
@@ -74,7 +83,10 @@ export async function GET() {
   } catch (error) {
     console.error("Admin users API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
