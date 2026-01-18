@@ -53,7 +53,7 @@ export default function InvitePage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/onboarding/role?code=${code}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/onboarding/role?code=${code}`)}`,
       },
     });
 
@@ -70,7 +70,7 @@ export default function InvitePage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding/role?code=${code}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(`/onboarding/role?code=${code}`)}`,
       },
     });
 
