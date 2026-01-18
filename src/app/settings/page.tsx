@@ -7,8 +7,9 @@ import {
   ProfileEditModal,
   ChildManagement,
   AboutModal,
+  InvitationModal,
 } from "@/components/settings";
-import { LogOut, User, Baby, Info, ChevronRight } from "lucide-react";
+import { LogOut, User, Baby, Info, ChevronRight, UserPlus } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isChildModalOpen, setIsChildModalOpen] = useState(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false);
+  const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -69,6 +71,12 @@ export default function SettingsPage() {
       label: "子供の管理",
       description: "子供の追加・編集",
       onClick: () => setIsChildModalOpen(true),
+    },
+    {
+      icon: UserPlus,
+      label: "家族を招待",
+      description: "招待コードを生成",
+      onClick: () => setIsInvitationModalOpen(true),
     },
     {
       icon: Info,
@@ -140,6 +148,11 @@ export default function SettingsPage() {
       <AboutModal
         isOpen={isAboutModalOpen}
         onClose={() => setIsAboutModalOpen(false)}
+      />
+
+      <InvitationModal
+        isOpen={isInvitationModalOpen}
+        onClose={() => setIsInvitationModalOpen(false)}
       />
     </AuthGuard>
   );
