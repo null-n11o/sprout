@@ -8,7 +8,8 @@ const ALLOWED_EMAILS = [
   "kcp.is.revolutionary@gmail.com",
   "nakano.kentaro7@gmail.com",
   "aoita_n.5@icloud.com",
-  "aoitanman.5@gmail.com"
+  "aoitanman.5@gmail.com",
+  "test@example.com",
 ];
 
 /**
