@@ -7,6 +7,7 @@ import { getFormattedAge } from "@/lib/utils";
 import { MessageCircle } from "lucide-react";
 import { HeartButton } from "@/components/ui";
 import { scaleIn, transitions } from "@/lib/animations";
+import { TagBadges, type TaggedMember } from "./TagBadges";
 
 export type PostWithDetails = {
   id: string;
@@ -30,6 +31,7 @@ export type PostWithDetails = {
   reaction_count: number;
   comment_count: number;
   has_reacted: boolean;
+  tags?: TaggedMember[];
 };
 
 type PostCardProps = {
@@ -195,6 +197,18 @@ export function PostCard({ post, onCommentClick, onReactionChange, index = 0 }: 
           >
             {post.caption}
           </motion.p>
+        )}
+
+        {/* タグ */}
+        {post.tags && post.tags.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.25 }}
+            className="mb-4"
+          >
+            <TagBadges tags={post.tags} />
+          </motion.div>
         )}
 
         {/* アクション - enhanced styling */}

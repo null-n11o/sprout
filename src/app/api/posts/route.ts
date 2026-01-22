@@ -28,7 +28,22 @@ export async function GET(request: NextRequest) {
       user:profiles!inner(id, name, avatar_url),
       reactions:reactions(count),
       comments:comments(count),
-      user_reaction:reactions!left(id, user_id)
+      user_reaction:reactions!left(id, user_id),
+      post_tags(
+        id,
+        member_id,
+        created_at,
+        family_members!inner(
+          id,
+          role,
+          custom_role_name,
+          profiles!inner(
+            id,
+            name,
+            avatar_url
+          )
+        )
+      )
     `
     )
     .order("created_at", { ascending: false })
@@ -53,18 +68,47 @@ export async function GET(request: NextRequest) {
   }
 
   const transformedPosts = posts?.map((post) => {
-    const { reactions, comments, user_reaction, ...rest } = post as {
+    const { reactions, comments, user_reaction, post_tags, ...rest } = post as {
       reactions: { count: number }[];
       comments: { count: number }[];
       user_reaction: { id: string; user_id: string }[] | null;
+      post_tags: {
+        id: string;
+        member_id: string;
+        created_at: string;
+        family_members: {
+          id: string;
+          role: string;
+          custom_role_name: string | null;
+          profiles: {
+            id: string;
+            name: string;
+            avatar_url: string | null;
+          };
+        };
+      }[] | null;
       [key: string]: unknown;
     };
     const hasReacted = user_reaction?.some((r) => r.user_id === user.id) ?? false;
+
+    // タグ情報を整形
+    const tags = post_tags?.map((tag) => ({
+      id: tag.family_members.id,
+      role: tag.family_members.role,
+      customRoleName: tag.family_members.custom_role_name,
+      profile: {
+        id: tag.family_members.profiles.id,
+        name: tag.family_members.profiles.name,
+        avatarUrl: tag.family_members.profiles.avatar_url,
+      },
+    })) ?? [];
+
     return {
       ...rest,
       reaction_count: reactions?.[0]?.count ?? 0,
       comment_count: comments?.[0]?.count ?? 0,
       has_reacted: hasReacted,
+      tags,
     };
   });
 

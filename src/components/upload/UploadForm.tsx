@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Camera, X, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Camera, X, Loader2, Sparkles, AlertCircle, UserPlus } from "lucide-react";
+import { TagSelectorModal } from "./TagSelectorModal";
 
 type Child = {
   id: string;
@@ -26,6 +27,9 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [captionError, setCaptionError] = useState<string | null>(null);
+  const [selectedTagMemberIds, setSelectedTagMemberIds] = useState<string[]>([]);
+  const [taggedMemberNames, setTaggedMemberNames] = useState<string[]>([]);
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +50,33 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
     setCaptionError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  // タグ選択が確定されたときにメンバー名を取得
+  const handleTagConfirm = async (memberIds: string[]) => {
+    setSelectedTagMemberIds(memberIds);
+
+    if (memberIds.length === 0) {
+      setTaggedMemberNames([]);
+      return;
+    }
+
+    // メンバー名を取得
+    try {
+      const response = await fetch("/api/family-members");
+      if (response.ok) {
+        const data = await response.json();
+        const names = memberIds
+          .map((id: string) => {
+            const member = data.members.find((m: { id: string; profile: { name: string } }) => m.id === id);
+            return member?.profile?.name;
+          })
+          .filter(Boolean) as string[];
+        setTaggedMemberNames(names);
+      }
+    } catch (error) {
+      console.error("Failed to fetch member names:", error);
     }
   };
 
@@ -138,6 +169,25 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
       if (!postResponse.ok) {
         throw new Error("Failed to create post");
       }
+
+      const postData = await postResponse.json();
+      setUploadProgress(90);
+
+      // 4. タグを設定（選択されている場合）
+      if (selectedTagMemberIds.length > 0 && postData.post?.id) {
+        const tagResponse = await fetch(`/api/posts/${postData.post.id}/tags`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            memberIds: selectedTagMemberIds,
+          }),
+        });
+
+        if (!tagResponse.ok) {
+          console.error("Failed to set tags, but post was created");
+        }
+      }
+
       setUploadProgress(100);
 
       onSuccess?.();
@@ -222,6 +272,33 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
         })}
       </div>
 
+      {/* タグ付け */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          写っている人をタグ付け
+        </label>
+        <button
+          type="button"
+          onClick={() => setIsTagModalOpen(true)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+          data-testid="tag-selector-button"
+        >
+          <div className="flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-600">
+              {taggedMemberNames.length > 0
+                ? taggedMemberNames.join(", ")
+                : "家族メンバーを選択"}
+            </span>
+          </div>
+          {selectedTagMemberIds.length > 0 && (
+            <span className="text-sm text-mare-600 font-medium">
+              {selectedTagMemberIds.length}人選択中
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* キャプション */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -299,6 +376,14 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
           )}
         </button>
       </div>
+
+      {/* タグ選択モーダル */}
+      <TagSelectorModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        selectedMemberIds={selectedTagMemberIds}
+        onConfirm={handleTagConfirm}
+      />
     </form>
   );
 }
