@@ -209,7 +209,7 @@ otp_expiry = 3600
 # Web UI: http://localhost:8025
 [auth.email.smtp]
 enabled = true
-host = "127.0.0.1"
+host = "host.docker.internal"
 port = 1025
 user = "mailpit"
 pass = "mailpit"
