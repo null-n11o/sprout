@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
   const cursor = searchParams.get("cursor");
   const childId = searchParams.get("child_id");
 
+  const memberIdsParam = searchParams.get("memberIds");
+  const memberIds = memberIdsParam ? memberIdsParam.split(",").filter(Boolean) : [];
+
   let query = supabase
     .from("posts")
     .select(
@@ -28,7 +31,16 @@ export async function GET(request: NextRequest) {
       user:profiles!inner(id, name, avatar_url),
       reactions:reactions(count),
       comments:comments(count),
-      user_reaction:reactions!left(id, user_id)
+      user_reaction:reactions!left(id, user_id),
+      post_tags(
+        member_id,
+        family_members!inner(
+          id,
+          role,
+          custom_role_name,
+          profiles!inner(name, avatar_url)
+        )
+      )
     `
     )
     .order("created_at", { ascending: false })
@@ -42,6 +54,16 @@ export async function GET(request: NextRequest) {
     query = query.lt("created_at", cursor);
   }
 
+  if (memberIds.length > 0) {
+    query = query.in(
+      "id",
+      supabase
+        .from("post_tags")
+        .select("post_id")
+        .in("member_id", memberIds)
+    );
+  }
+
   const { data: posts, error } = await query;
 
   if (error) {
@@ -53,18 +75,37 @@ export async function GET(request: NextRequest) {
   }
 
   const transformedPosts = posts?.map((post) => {
-    const { reactions, comments, user_reaction, ...rest } = post as {
+    const { reactions, comments, user_reaction, post_tags, ...rest } = post as {
       reactions: { count: number }[];
       comments: { count: number }[];
       user_reaction: { id: string; user_id: string }[] | null;
+      post_tags: {
+        member_id: string;
+        family_members: {
+          id: string;
+          role: string;
+          custom_role_name: string | null;
+          profiles: { name: string; avatar_url: string | null };
+        };
+      }[];
       [key: string]: unknown;
     };
     const hasReacted = user_reaction?.some((r) => r.user_id === user.id) ?? false;
+    const tags = post_tags?.map((pt) => ({
+      id: pt.family_members.id,
+      role: pt.family_members.role,
+      customRoleName: pt.family_members.custom_role_name,
+      profile: {
+        name: pt.family_members.profiles.name,
+        avatarUrl: pt.family_members.profiles.avatar_url,
+      },
+    })) ?? [];
     return {
       ...rest,
       reaction_count: reactions?.[0]?.count ?? 0,
       comment_count: comments?.[0]?.count ?? 0,
       has_reacted: hasReacted,
+      tags,
     };
   });
 
@@ -93,7 +134,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { child_id, media_url, media_type, caption } = body;
+  const { child_id, media_url, media_type, caption, memberIds } = body;
 
   if (!child_id || !media_url || !media_type) {
     return NextResponse.json(
@@ -127,6 +168,22 @@ export async function POST(request: NextRequest) {
       { error: "Failed to create post" },
       { status: 500 }
     );
+  }
+
+  // タグの保存
+  if (Array.isArray(memberIds) && memberIds.length > 0) {
+    const tagInserts = memberIds.map((memberId: string) => ({
+      post_id: post.id,
+      member_id: memberId,
+    }));
+
+    const { error: tagError } = await supabase
+      .from("post_tags")
+      .insert(tagInserts);
+
+    if (tagError) {
+      console.error("Post tags insert error:", tagError);
+    }
   }
 
   return NextResponse.json({ post }, { status: 201 });

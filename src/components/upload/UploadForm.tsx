@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { Camera, X, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { TagSelector } from "./TagSelector";
 
 type Child = {
   id: string;
@@ -22,6 +23,7 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
     childList[0]?.id || ""
   );
   const [caption, setCaption] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
@@ -119,7 +121,7 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
       }
       setUploadProgress(70);
 
-      // 3. 投稿を作成
+      // 3. 投稿を作成（タグ付きメンバーIDも送信）
       const mediaType = selectedFile.type.startsWith("video/")
         ? "video"
         : "image";
@@ -132,6 +134,7 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
           media_url: publicUrl,
           media_type: mediaType,
           caption: caption || null,
+          memberIds: selectedMemberIds,
         }),
       });
 
@@ -258,6 +261,12 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
           </div>
         )}
       </div>
+
+      {/* タグ付け */}
+      <TagSelector
+        selectedMemberIds={selectedMemberIds}
+        onChange={setSelectedMemberIds}
+      />
 
       {/* 進捗バー */}
       {isUploading && (
