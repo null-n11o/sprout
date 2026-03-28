@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { selectFeaturedPost, toFeaturedResponse } from "@/lib/api/featured";
+import { validateYearMonth, calculateMonthRange } from "@/lib/api/date-utils";
 
 type RouteParams = {
   params: Promise<{
@@ -24,29 +26,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { searchParams } = new URL(request.url);
   const childId = searchParams.get("child_id");
 
-  // 年月のバリデーション
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
 
-  if (
-    isNaN(yearNum) ||
-    isNaN(monthNum) ||
-    monthNum < 1 ||
-    monthNum > 12 ||
-    yearNum < 2000 ||
-    yearNum > 2100
-  ) {
+  if (!validateYearMonth(yearNum, monthNum)) {
     return NextResponse.json(
       { error: "Invalid year or month" },
       { status: 400 }
     );
   }
 
-  // 月の開始日と終了日を計算
-  const startDate = new Date(yearNum, monthNum - 1, 1);
-  const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
-  const startDateStr = startDate.toISOString();
-  const endDateStr = endDate.toISOString();
+  const { startDate: startDateStr, endDate: endDateStr } = calculateMonthRange(yearNum, monthNum);
 
   try {
     // Like数が最も多い画像を取得するクエリ
@@ -98,38 +88,26 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           .select("*", { count: "exact", head: true })
           .eq("post_id", post.id);
 
+        const child = post.child as { id: string; name: string };
         return {
-          ...post,
+          id: post.id,
+          media_url: post.media_url,
+          created_at: post.created_at,
+          child,
           reactionCount: count ?? 0,
         };
       })
     );
 
-    // リアクション数でソート（多い順）、同数なら新しい順
-    postsWithReactions.sort((a, b) => {
-      if (b.reactionCount !== a.reactionCount) {
-        return b.reactionCount - a.reactionCount;
-      }
-      return (
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    });
-
-    const featured = postsWithReactions[0];
-    const child = featured.child as { id: string; name: string };
+    // lib関数で代表画像を選出
+    const featured = selectFeaturedPost(postsWithReactions);
+    if (!featured) {
+      return NextResponse.json({ featured: null });
+    }
 
     // キャッシュヘッダーを設定（60秒間キャッシュ、stale-while-revalidate）
     return NextResponse.json(
-      {
-        featured: {
-          id: featured.id,
-          mediaUrl: featured.media_url,
-          childId: child.id,
-          childName: child.name,
-          createdAt: featured.created_at,
-          reactionCount: featured.reactionCount,
-        },
-      },
+      { featured: toFeaturedResponse(featured) },
       {
         headers: {
           "Cache-Control": "private, max-age=60, stale-while-revalidate=300",

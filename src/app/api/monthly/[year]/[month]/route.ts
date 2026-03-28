@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  validateYearMonth,
+  calculateMonthRange,
+  calculateMonthDateRange,
+} from "@/lib/api/date-utils";
 
 type RouteParams = {
   params: Promise<{
@@ -24,32 +29,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const { searchParams } = new URL(request.url);
   const childId = searchParams.get("child_id");
 
-  // 年月のバリデーション
   const yearNum = parseInt(year, 10);
   const monthNum = parseInt(month, 10);
 
-  if (
-    isNaN(yearNum) ||
-    isNaN(monthNum) ||
-    monthNum < 1 ||
-    monthNum > 12 ||
-    yearNum < 2000 ||
-    yearNum > 2100
-  ) {
+  if (!validateYearMonth(yearNum, monthNum)) {
     return NextResponse.json(
       { error: "Invalid year or month" },
       { status: 400 }
     );
   }
 
-  // 月の開始日と終了日を計算
-  const startDate = new Date(yearNum, monthNum - 1, 1);
-  const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
-  const startDateStr = startDate.toISOString();
-  const endDateStr = endDate.toISOString();
+  const { startDate: startDateStr, endDate: endDateStr } = calculateMonthRange(yearNum, monthNum);
+  const { monthStart, monthEnd } = calculateMonthDateRange(yearNum, monthNum);
 
   // recorded_at 用の月を表す日付（YYYY-MM-01）
-  const recordedAtMonth = `${yearNum}-${String(monthNum).padStart(2, "0")}-01`;
+  const recordedAtMonth = monthStart;
 
   try {
     // 写真を取得（posts テーブルから）
@@ -86,10 +80,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // 成長記録を取得（最新の1件）
     // DATE型なので gte/lte で日付範囲比較
-    const monthStart = `${yearNum}-${String(monthNum).padStart(2, "0")}-01`;
-    const lastDay = new Date(yearNum, monthNum, 0).getDate();
-    const monthEnd = `${yearNum}-${String(monthNum).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
     let growthQuery = supabase
       .from("growth_records")
       .select("height, weight, recorded_at")

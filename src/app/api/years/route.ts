@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { groupPostsByYear, selectYearThumbnails } from "@/lib/api/years";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -48,62 +49,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 年ごとにグループ化
-    const yearMap = new Map<
-      number,
-      { posts: typeof posts; photoCount: number }
-    >();
+    // lib関数で年ごとにグループ化
+    const yearMap = groupPostsByYear(posts);
 
-    for (const post of posts) {
-      const year = new Date(post.created_at).getFullYear();
-      if (!yearMap.has(year)) {
-        yearMap.set(year, { posts: [], photoCount: 0 });
+    // lib関数で各年の代表サムネイルを選出
+    const yearsWithThumbnails = await selectYearThumbnails(
+      yearMap,
+      async (postId) => {
+        const { count } = await supabase
+          .from("reactions")
+          .select("*", { count: "exact", head: true })
+          .eq("post_id", postId);
+        return count ?? 0;
       }
-      const yearData = yearMap.get(year)!;
-      yearData.posts.push(post);
-      yearData.photoCount++;
-    }
-
-    // 各年の代表サムネイル（年内で最もLike数が多い画像）を取得
-    const yearsWithThumbnails = await Promise.all(
-      Array.from(yearMap.entries()).map(async ([year, data]) => {
-        // 各投稿のリアクション数を取得
-        const postsWithReactions = await Promise.all(
-          data.posts.map(async (post) => {
-            const { count } = await supabase
-              .from("reactions")
-              .select("*", { count: "exact", head: true })
-              .eq("post_id", post.id);
-
-            return {
-              ...post,
-              reactionCount: count ?? 0,
-            };
-          })
-        );
-
-        // リアクション数でソート（多い順）、同数なら新しい順
-        postsWithReactions.sort((a, b) => {
-          if (b.reactionCount !== a.reactionCount) {
-            return b.reactionCount - a.reactionCount;
-          }
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
-        });
-
-        const thumbnail = postsWithReactions[0];
-
-        return {
-          year,
-          thumbnailUrl: thumbnail?.media_url ?? null,
-          photoCount: data.photoCount,
-        };
-      })
     );
-
-    // 年の降順でソート
-    yearsWithThumbnails.sort((a, b) => b.year - a.year);
 
     // キャッシュヘッダーを設定（5分間キャッシュ、stale-while-revalidate）
     return NextResponse.json(
