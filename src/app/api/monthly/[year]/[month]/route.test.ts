@@ -127,6 +127,29 @@ describe("GET /api/monthly/[year]/[month]", () => {
     expect(json).toEqual({ error: "Failed to fetch milestones" });
   });
 
+  it("予期しない例外が発生したら500を返す", async () => {
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "u1" } },
+          error: null,
+        })),
+      },
+      from: () => {
+        throw new Error("boom");
+      },
+    } as never);
+
+    const response = await GET(
+      getRequest("http://localhost/api/monthly/2024/3"),
+      params("2024", "3")
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: "Failed to fetch monthly data" });
+  });
+
   it("成功時は写真・成長記録・成長メモをまとめて返す", async () => {
     const photos = [
       {

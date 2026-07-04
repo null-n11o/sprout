@@ -71,6 +71,29 @@ describe("GET /api/featured/[year]/[month]", () => {
     expect(json).toEqual({ error: "Failed to fetch posts" });
   });
 
+  it("予期しない例外が発生したら500を返す", async () => {
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "u1" } },
+          error: null,
+        })),
+      },
+      from: () => {
+        throw new Error("boom");
+      },
+    } as never);
+
+    const response = await GET(
+      getRequest("http://localhost/api/featured/2024/3"),
+      params("2024", "3")
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: "Failed to fetch featured image" });
+  });
+
   it("対象月に投稿が無ければfeatured:nullを返す", async () => {
     setSupabase(
       createSupabaseMock({

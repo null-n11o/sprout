@@ -48,6 +48,26 @@ describe("GET /api/years", () => {
     expect(json).toEqual({ error: "Failed to fetch posts" });
   });
 
+  it("予期しない例外が発生したら500を返す", async () => {
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "u1" } },
+          error: null,
+        })),
+      },
+      from: () => {
+        throw new Error("boom");
+      },
+    } as never);
+
+    const response = await GET(getRequest());
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: "Failed to fetch years" });
+  });
+
   it("投稿が0件ならyears:[]を返す", async () => {
     setSupabase(
       createSupabaseMock({

@@ -97,6 +97,29 @@ describe("GET /api/monthly/[year]", () => {
     expect(json).toEqual({ error: "Failed to fetch posts" });
   });
 
+  it("予期しない例外が発生したら500を返す", async () => {
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn(async () => ({
+          data: { user: { id: "u1" } },
+          error: null,
+        })),
+      },
+      from: () => {
+        throw new Error("boom");
+      },
+    } as never);
+
+    const response = await GET(
+      getRequest("http://localhost/api/monthly/2024"),
+      params("2024")
+    );
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: "Failed to fetch monthly availability" });
+  });
+
   it("成功時は写真が存在する月の一覧を昇順・重複なしで返す", async () => {
     const posts = [
       { created_at: "2024-03-15T12:00:00.000Z" },
