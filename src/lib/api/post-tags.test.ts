@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   validateMemberIds,
   toTaggedMember,
-  type TaggedMember,
-  type TagError,
 } from "./post-tags";
 
 describe("validateMemberIds", () => {

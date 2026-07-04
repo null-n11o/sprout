@@ -5,7 +5,6 @@ import {
   CONFUSING_CHARS,
   validateInvitationResult,
   type Invitation,
-  type InvitationError,
 } from "./invitations";
 
 describe("generateInvitationCode", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { Camera, X, Loader2, Sparkles, AlertCircle, UserPlus } from "lucide-react";
 import { TagSelectorModal } from "./TagSelectorModal";

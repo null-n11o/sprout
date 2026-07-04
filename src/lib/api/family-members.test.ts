@@ -6,8 +6,6 @@ import {
   toFamilyMemberWithProfile,
   getRoleDisplayName,
   type FamilyRole,
-  type FamilyMemberWithProfile,
-  type MemberError,
 } from "./family-members";
 
 describe("FAMILY_ROLES", () => {

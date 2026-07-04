@@ -4,7 +4,7 @@
  * 家族メンバーの役割定義、検証、APIで使用する型を提供する
  */
 
-import type { FamilyRole as DbFamilyRole, Profile } from "@/types/database";
+import type { FamilyRole as DbFamilyRole } from "@/types/database";
 
 // 家族役割の定数
 export const FAMILY_ROLES = [

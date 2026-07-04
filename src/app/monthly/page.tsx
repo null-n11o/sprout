@@ -52,7 +52,6 @@ export default function MonthlyPage() {
     milestones: [],
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [oldestMonth, setOldestMonth] = useState<{ year: number; month: number } | null>(null);
 
   // 子どもリストを取得
   useEffect(() => {
