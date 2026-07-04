@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getPresignedUploadUrl } from "@/lib/r2";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 const ALLOWED_TYPES = [
   "image/jpeg",
@@ -14,14 +14,9 @@ const ALLOWED_TYPES = [
 export async function POST(request: Request) {
   try {
     // Check authentication
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser();
+    if (auth.response) return auth.response;
+    const { supabase } = auth;
 
     // Parse request body
     const body = await request.json();
@@ -29,18 +24,12 @@ export async function POST(request: Request) {
 
     // Validate required fields
     if (!childId || !fileName || !contentType) {
-      return NextResponse.json(
-        { error: "Missing required fields: childId, fileName, contentType" },
-        { status: 400 }
-      );
+      return jsonError("Missing required fields: childId, fileName, contentType", 400);
     }
 
     // Validate content type
     if (!ALLOWED_TYPES.includes(contentType)) {
-      return NextResponse.json(
-        { error: `Invalid content type. Allowed: ${ALLOWED_TYPES.join(", ")}` },
-        { status: 400 }
-      );
+      return jsonError(`Invalid content type. Allowed: ${ALLOWED_TYPES.join(", ")}`, 400);
     }
 
     // Verify child exists
@@ -51,7 +40,7 @@ export async function POST(request: Request) {
       .single();
 
     if (childError || !child) {
-      return NextResponse.json({ error: "Child not found" }, { status: 404 });
+      return jsonError("Child not found", 404);
     }
 
     // Generate presigned URL
@@ -64,9 +53,6 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Presign error:", error);
-    return NextResponse.json(
-      { error: "Failed to generate upload URL" },
-      { status: 500 }
-    );
+    return jsonError("Failed to generate upload URL", 500);
   }
 }

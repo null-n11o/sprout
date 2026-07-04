@@ -1,32 +1,24 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdmin } from "@/lib/admin";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 export async function GET() {
   // 現在のユーザーを確認
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { user } = auth;
 
   // スーパー管理者かどうか確認
   if (!isSuperAdmin(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return jsonError("Forbidden", 403);
   }
 
   try {
     // 環境変数の確認
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error("SUPABASE_SERVICE_ROLE_KEY is not set");
-      return NextResponse.json(
-        { error: "Server configuration error: Missing service role key" },
-        { status: 500 }
-      );
+      return jsonError("Server configuration error: Missing service role key", 500);
     }
 
     const adminClient = createAdminClient();
@@ -39,10 +31,7 @@ export async function GET() {
 
     if (authError) {
       console.error("Failed to list users:", authError);
-      return NextResponse.json(
-        { error: "Failed to fetch users" },
-        { status: 500 }
-      );
+      return jsonError("Failed to fetch users", 500);
     }
 
     // profilesテーブルから追加情報を取得

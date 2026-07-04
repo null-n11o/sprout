@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuperAdmin } from "@/lib/admin";
+import { jsonError } from "@/lib/api/route-helpers";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,7 +18,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (!user || !isSuperAdmin(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return jsonError("Forbidden", 403);
   }
 
   try {
@@ -29,7 +30,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     } = await adminClient.auth.admin.getUserById(id);
 
     if (error || !targetUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return jsonError("User not found", 404);
     }
 
     const { data: profile } = await adminClient
@@ -52,10 +53,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Get user error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return jsonError("Internal server error", 500);
   }
 }
 
@@ -69,7 +67,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (!user || !isSuperAdmin(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return jsonError("Forbidden", 403);
   }
 
   // 自分自身は削除できないようにする（編集は可能）
@@ -98,20 +96,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
       if (error) {
         console.error("Profile update error:", error);
-        return NextResponse.json(
-          { error: "Failed to update user" },
-          { status: 500 }
-        );
+        return jsonError("Failed to update user", 500);
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update user error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return jsonError("Internal server error", 500);
   }
 }
 
@@ -125,15 +117,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   } = await supabase.auth.getUser();
 
   if (!user || !isSuperAdmin(user.email)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return jsonError("Forbidden", 403);
   }
 
   // 自分自身は削除できない
   if (user.id === id) {
-    return NextResponse.json(
-      { error: "Cannot delete yourself" },
-      { status: 400 }
-    );
+    return jsonError("Cannot delete yourself", 400);
   }
 
   try {
@@ -144,18 +133,12 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     if (error) {
       console.error("Delete user error:", error);
-      return NextResponse.json(
-        { error: "Failed to delete user" },
-        { status: 500 }
-      );
+      return jsonError("Failed to delete user", 500);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete user error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return jsonError("Internal server error", 500);
   }
 }
