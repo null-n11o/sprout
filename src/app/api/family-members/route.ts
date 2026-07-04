@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 import {
   validateFamilyRole,
   toFamilyMemberWithProfile,
@@ -16,16 +16,9 @@ import {
  * 家族メンバー一覧を取得
  */
 export async function GET() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   // 家族メンバー一覧を取得（profilesをJOIN）
   const { data: members, error } = await supabase
@@ -46,10 +39,7 @@ export async function GET() {
 
   if (error) {
     console.error("Family members fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch family members" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch family members", 500);
   }
 
   // ドメインオブジェクトに変換
@@ -76,26 +66,16 @@ export async function GET() {
  * 新規メンバーを登録（招待コード検証、役割設定）
  */
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   // リクエストボディを取得
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return jsonError("Invalid request body", 400);
   }
 
   const { role, customRoleName, invitationCode } = body;
@@ -103,10 +83,7 @@ export async function POST(request: NextRequest) {
   // 役割の検証
   const roleResult = validateFamilyRole(role);
   if (!roleResult.ok) {
-    return NextResponse.json(
-      { error: roleResult.error.message },
-      { status: 400 }
-    );
+    return jsonError(roleResult.error.message, 400);
   }
 
   // 既に登録されているか確認
@@ -117,10 +94,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existingMember) {
-    return NextResponse.json(
-      { error: "既に家族メンバーとして登録されています" },
-      { status: 409 }
-    );
+    return jsonError("既に家族メンバーとして登録されています", 409);
   }
 
   // 招待コードが指定されている場合は検証
@@ -132,10 +106,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (invError || !invitation) {
-      return NextResponse.json(
-        { error: "招待コードが見つかりません" },
-        { status: 400 }
-      );
+      return jsonError("招待コードが見つかりません", 400);
     }
 
     // 招待を検証
@@ -152,10 +123,7 @@ export async function POST(request: NextRequest) {
     const invResult = validateInvitationResult(domainInvitation);
     if (!invResult.ok) {
       const statusCode = invResult.error.type === "EXPIRED" ? 410 : 400;
-      return NextResponse.json(
-        { error: invResult.error.message },
-        { status: statusCode }
-      );
+      return jsonError(invResult.error.message, statusCode);
     }
 
     // 招待の使用回数を更新
@@ -166,10 +134,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("Invitation update error:", updateError);
-      return NextResponse.json(
-        { error: "招待コードの更新に失敗しました" },
-        { status: 500 }
-      );
+      return jsonError("招待コードの更新に失敗しました", 500);
     }
   }
 
@@ -198,10 +163,7 @@ export async function POST(request: NextRequest) {
 
   if (insertError) {
     console.error("Family member insert error:", insertError);
-    return NextResponse.json(
-      { error: "家族メンバーの登録に失敗しました" },
-      { status: 500 }
-    );
+    return jsonError("家族メンバーの登録に失敗しました", 500);
   }
 
   const profile = newMember.profiles as { name: string; avatar_url: string | null };
