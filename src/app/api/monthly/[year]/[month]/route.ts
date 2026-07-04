@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 type RouteParams = {
   params: Promise<{
@@ -9,16 +9,9 @@ type RouteParams = {
 };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   const { year, month } = await params;
   const { searchParams } = new URL(request.url);
@@ -36,10 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     yearNum < 2000 ||
     yearNum > 2100
   ) {
-    return NextResponse.json(
-      { error: "Invalid year or month" },
-      { status: 400 }
-    );
+    return jsonError("Invalid year or month", 400);
   }
 
   // 月の開始日と終了日を計算
@@ -78,10 +68,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (photosError) {
       console.error("Photos fetch error:", photosError);
-      return NextResponse.json(
-        { error: "Failed to fetch photos" },
-        { status: 500 }
-      );
+      return jsonError("Failed to fetch photos", 500);
     }
 
     // 成長記録を取得（最新の1件）
@@ -106,10 +93,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (growthError) {
       console.error("Growth records fetch error:", growthError);
-      return NextResponse.json(
-        { error: "Failed to fetch growth records" },
-        { status: 500 }
-      );
+      return jsonError("Failed to fetch growth records", 500);
     }
 
     // 成長メモを取得
@@ -127,10 +111,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (milestonesError) {
       console.error("Milestones fetch error:", milestonesError);
-      return NextResponse.json(
-        { error: "Failed to fetch milestones" },
-        { status: 500 }
-      );
+      return jsonError("Failed to fetch milestones", 500);
     }
 
     // キャッシュヘッダーを設定（60秒間キャッシュ、stale-while-revalidate）
@@ -148,9 +129,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   } catch (error) {
     console.error("Monthly data fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch monthly data" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch monthly data", 500);
   }
 }
