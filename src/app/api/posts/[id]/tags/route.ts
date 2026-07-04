@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 import {
   validateMemberIds,
   toTaggedMember,
@@ -16,17 +16,10 @@ type RouteParams = {
  * 投稿のタグ一覧を取得
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
   const { id: postId } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // 投稿の存在確認
   const { data: post, error: postError } = await supabase
@@ -36,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     .maybeSingle();
 
   if (postError || !post) {
-    return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
+    return jsonError("投稿が見つかりません", 404);
   }
 
   // タグを取得（family_membersとprofilesをJOIN）
@@ -64,10 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   if (tagsError) {
     console.error("Tags fetch error:", tagsError);
-    return NextResponse.json(
-      { error: "タグの取得に失敗しました" },
-      { status: 500 }
-    );
+    return jsonError("タグの取得に失敗しました", 500);
   }
 
   // ドメインオブジェクトに変換
@@ -100,27 +90,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * 投稿のタグを設定・更新（既存タグを全て置き換え）
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
   const { id: postId } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // リクエストボディを取得
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return jsonError("Invalid request body", 400);
   }
 
   const { memberIds } = body;
@@ -128,10 +108,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   // memberIdsの検証
   const validationResult = validateMemberIds(memberIds);
   if (!validationResult.ok) {
-    return NextResponse.json(
-      { error: validationResult.error.message },
-      { status: 400 }
-    );
+    return jsonError(validationResult.error.message, 400);
   }
 
   // 投稿の存在と所有者確認
@@ -142,15 +119,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     .maybeSingle();
 
   if (postError || !post) {
-    return NextResponse.json({ error: "投稿が見つかりません" }, { status: 404 });
+    return jsonError("投稿が見つかりません", 404);
   }
 
   // 投稿者のみ編集可能
   if (post.user_id !== user.id) {
-    return NextResponse.json(
-      { error: "この投稿のタグを編集する権限がありません" },
-      { status: 403 }
-    );
+    return jsonError("この投稿のタグを編集する権限がありません", 403);
   }
 
   const validMemberIds = validationResult.value;
@@ -164,17 +138,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (membersError) {
       console.error("Members check error:", membersError);
-      return NextResponse.json(
-        { error: "メンバーの確認に失敗しました" },
-        { status: 500 }
-      );
+      return jsonError("メンバーの確認に失敗しました", 500);
     }
 
     if (!existingMembers || existingMembers.length !== validMemberIds.length) {
-      return NextResponse.json(
-        { error: "指定されたメンバーが見つかりません" },
-        { status: 400 }
-      );
+      return jsonError("指定されたメンバーが見つかりません", 400);
     }
   }
 
@@ -186,10 +154,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   if (deleteError) {
     console.error("Tags delete error:", deleteError);
-    return NextResponse.json(
-      { error: "タグの削除に失敗しました" },
-      { status: 500 }
-    );
+    return jsonError("タグの削除に失敗しました", 500);
   }
 
   // 新しいタグを挿入（空配列の場合はスキップ）
@@ -205,10 +170,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (insertError) {
       console.error("Tags insert error:", insertError);
-      return NextResponse.json(
-        { error: "タグの設定に失敗しました" },
-        { status: 500 }
-      );
+      return jsonError("タグの設定に失敗しました", 500);
     }
   }
 
@@ -237,10 +199,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   if (tagsError) {
     console.error("Tags fetch error:", tagsError);
-    return NextResponse.json(
-      { error: "タグの取得に失敗しました" },
-      { status: 500 }
-    );
+    return jsonError("タグの取得に失敗しました", 500);
   }
 
   // ドメインオブジェクトに変換
