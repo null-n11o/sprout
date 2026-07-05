@@ -3,13 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sprout, Check, Loader2, Users } from "lucide-react";
-import { useAuth } from "@/components/auth";
-import {
-  FAMILY_ROLES,
-  FAMILY_ROLE_LABELS,
-  type FamilyRole,
-} from "@/lib/api/family-members";
+import { Sprout, Loader2, Users } from "lucide-react";
+import { useAuth, RoleSelector } from "@/components/auth";
+import { type FamilyRole } from "@/lib/api/family-members";
 import { validateOnboardingState, type OnboardingState } from "@/lib/api/onboarding";
 
 function RoleSelectionForm() {
@@ -111,35 +107,7 @@ function RoleSelectionForm() {
             家族内での役割を選択してください
           </p>
 
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {FAMILY_ROLES.map((role) => {
-              const isSelected = selectedRole === role;
-              return (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => setSelectedRole(role)}
-                  className={`p-3 rounded-xl border-2 text-left transition-colors ${
-                    isSelected
-                      ? "border-mare-400 bg-mare-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  data-testid={`role-option-${role}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`font-medium text-sm ${
-                        isSelected ? "text-mare-600" : "text-gray-700"
-                      }`}
-                    >
-                      {FAMILY_ROLE_LABELS[role]}
-                    </span>
-                    {isSelected && <Check className="w-4 h-4 text-mare-500" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <RoleSelector value={selectedRole} onChange={setSelectedRole} />
 
           {/* Custom role name input (only for "other") */}
           {selectedRole === "other" && (
