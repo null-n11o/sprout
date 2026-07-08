@@ -41,3 +41,9 @@ public/workbox-*.js
 public/sw.js.map
 public/workbox-*.js.map
 test-results/
+
+# playwright
+playwright-report/
+
+# superpowers scratch
+.superpowers/

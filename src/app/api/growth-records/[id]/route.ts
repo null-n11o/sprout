@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 const HEIGHT_MIN = 30;
 const HEIGHT_MAX = 200;
@@ -10,17 +10,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
   const { id } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const { data: record, error } = await supabase
     .from("growth_records")
@@ -34,10 +27,7 @@ export async function GET(
     .single();
 
   if (error || !record) {
-    return NextResponse.json(
-      { error: "Growth record not found" },
-      { status: 404 }
-    );
+    return jsonError("Growth record not found", 404);
   }
 
   return NextResponse.json({ record });
@@ -47,17 +37,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
   const { id } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const body = await request.json();
   const { height, weight, memo, recorded_at } = body;
@@ -67,9 +50,9 @@ export async function PUT(
   if (height !== undefined) {
     const heightNum = Number(height);
     if (isNaN(heightNum) || heightNum < HEIGHT_MIN || heightNum > HEIGHT_MAX) {
-      return NextResponse.json(
-        { error: `Height must be between ${HEIGHT_MIN} and ${HEIGHT_MAX} cm` },
-        { status: 400 }
+      return jsonError(
+        `Height must be between ${HEIGHT_MIN} and ${HEIGHT_MAX} cm`,
+        400
       );
     }
     updateData.height = heightNum;
@@ -78,9 +61,9 @@ export async function PUT(
   if (weight !== undefined) {
     const weightNum = Number(weight);
     if (isNaN(weightNum) || weightNum < WEIGHT_MIN || weightNum > WEIGHT_MAX) {
-      return NextResponse.json(
-        { error: `Weight must be between ${WEIGHT_MIN} and ${WEIGHT_MAX} kg` },
-        { status: 400 }
+      return jsonError(
+        `Weight must be between ${WEIGHT_MIN} and ${WEIGHT_MAX} kg`,
+        400
       );
     }
     updateData.weight = weightNum;
@@ -95,10 +78,7 @@ export async function PUT(
   }
 
   if (Object.keys(updateData).length === 0) {
-    return NextResponse.json(
-      { error: "No fields to update" },
-      { status: 400 }
-    );
+    return jsonError("No fields to update", 400);
   }
 
   const { data: record, error } = await supabase
@@ -110,10 +90,7 @@ export async function PUT(
 
   if (error) {
     console.error("Growth record update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update growth record" },
-      { status: 500 }
-    );
+    return jsonError("Failed to update growth record", 500);
   }
 
   return NextResponse.json({ record });
@@ -123,17 +100,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
   const { id } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const { error } = await supabase
     .from("growth_records")
@@ -142,10 +112,7 @@ export async function DELETE(
 
   if (error) {
     console.error("Growth record deletion error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete growth record" },
-      { status: 500 }
-    );
+    return jsonError("Failed to delete growth record", 500);
   }
 
   return NextResponse.json({ success: true });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 type RouteParams = {
   params: Promise<{
@@ -14,16 +14,9 @@ type RouteParams = {
  * Response: { availableMonths: number[] }
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   const { year } = await params;
   const { searchParams } = new URL(request.url);
@@ -33,7 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const yearNum = parseInt(year, 10);
 
   if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
-    return NextResponse.json({ error: "Invalid year" }, { status: 400 });
+    return jsonError("Invalid year", 400);
   }
 
   // 年の開始日と終了日を計算
@@ -59,10 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (postsError) {
       console.error("Posts fetch error:", postsError);
-      return NextResponse.json(
-        { error: "Failed to fetch posts" },
-        { status: 500 }
-      );
+      return jsonError("Failed to fetch posts", 500);
     }
 
     // 各月に写真があるかを計算
@@ -81,9 +71,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ availableMonths });
   } catch (error) {
     console.error("Monthly availability fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch monthly availability" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch monthly availability", 500);
   }
 }

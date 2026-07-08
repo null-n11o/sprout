@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   const { data: profile, error } = await supabase
     .from("profiles")
@@ -21,35 +14,22 @@ export async function GET() {
 
   if (error) {
     console.error("Profile fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch profile" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch profile", 500);
   }
 
   return NextResponse.json({ profile });
 }
 
 export async function PUT(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   const body = await request.json();
   const { name, avatar_url } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Name is required" },
-      { status: 400 }
-    );
+    return jsonError("Name is required", 400);
   }
 
   const { data: profile, error } = await supabase
@@ -64,10 +44,7 @@ export async function PUT(request: NextRequest) {
 
   if (error) {
     console.error("Profile update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update profile" },
-      { status: 500 }
-    );
+    return jsonError("Failed to update profile", 500);
   }
 
   return NextResponse.json({ profile });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 import {
   generateInvitationCode,
   calculateExpiryDate,
@@ -9,16 +9,9 @@ import {
 const MAX_RETRY_COUNT = 5;
 
 export async function POST() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   // コード重複を避けるためリトライロジック
   let code: string;
@@ -40,10 +33,7 @@ export async function POST() {
     retryCount++;
     if (retryCount >= MAX_RETRY_COUNT) {
       console.error("Failed to generate unique invitation code");
-      return NextResponse.json(
-        { error: "Failed to generate invitation code" },
-        { status: 500 }
-      );
+      return jsonError("Failed to generate invitation code", 500);
     }
   }
 
@@ -61,10 +51,7 @@ export async function POST() {
 
   if (error) {
     console.error("Invitation insert error:", error);
-    return NextResponse.json(
-      { error: "Failed to create invitation" },
-      { status: 500 }
-    );
+    return jsonError("Failed to create invitation", 500);
   }
 
   const baseUrl =

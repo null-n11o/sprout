@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 import {
   validateFamilyRole,
   toFamilyMemberWithProfile,
@@ -11,26 +11,16 @@ import {
  * 自分の役割を更新
  */
 export async function PUT(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   // リクエストボディを取得
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request body" },
-      { status: 400 }
-    );
+    return jsonError("Invalid request body", 400);
   }
 
   const { role, customRoleName } = body;
@@ -38,10 +28,7 @@ export async function PUT(request: NextRequest) {
   // 役割の検証
   const roleResult = validateFamilyRole(role);
   if (!roleResult.ok) {
-    return NextResponse.json(
-      { error: roleResult.error.message },
-      { status: 400 }
-    );
+    return jsonError(roleResult.error.message, 400);
   }
 
   // 自分の家族メンバーレコードを取得
@@ -53,17 +40,11 @@ export async function PUT(request: NextRequest) {
 
   if (fetchError) {
     console.error("Family member fetch error:", fetchError);
-    return NextResponse.json(
-      { error: "Failed to fetch family member" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch family member", 500);
   }
 
   if (!existingMember) {
-    return NextResponse.json(
-      { error: "家族メンバーとして登録されていません" },
-      { status: 404 }
-    );
+    return jsonError("家族メンバーとして登録されていません", 404);
   }
 
   // 役割を更新
@@ -91,10 +72,7 @@ export async function PUT(request: NextRequest) {
 
   if (updateError) {
     console.error("Family member update error:", updateError);
-    return NextResponse.json(
-      { error: "役割の更新に失敗しました" },
-      { status: 500 }
-    );
+    return jsonError("役割の更新に失敗しました", 500);
   }
 
   const profile = updatedMember.profiles as { name: string; avatar_url: string | null };

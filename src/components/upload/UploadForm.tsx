@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Camera, X, Loader2, Sparkles, AlertCircle, UserPlus } from "lucide-react";
 import { TagSelectorModal } from "./TagSelectorModal";
+import { useUploadFlow } from "./useUploadFlow";
+import { useCaptionGenerator } from "./useCaptionGenerator";
 
 type Child = {
   id: string;
@@ -17,40 +19,35 @@ type UploadFormProps = {
 };
 
 export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [selectedChildId, setSelectedChildId] = useState<string>(
     childList[0]?.id || ""
   );
   const [caption, setCaption] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
-  const [captionError, setCaptionError] = useState<string | null>(null);
   const [selectedTagMemberIds, setSelectedTagMemberIds] = useState<string[]>([]);
   const [taggedMemberNames, setTaggedMemberNames] = useState<string[]>([]);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const {
+    selectedFile,
+    preview,
+    isUploading,
+    uploadProgress,
+    fileInputRef,
+    handleFileSelect,
+    removeFile,
+    submit,
+  } = useUploadFlow({ onSuccess });
 
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+  const {
+    isGeneratingCaption,
+    captionError,
+    generateCaption,
+    clearCaptionError,
+  } = useCaptionGenerator({ onCaption: setCaption });
 
   const handleRemoveFile = () => {
-    setSelectedFile(null);
-    setPreview(null);
-    setCaptionError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    removeFile();
+    clearCaptionError();
   };
 
   // タグ選択が確定されたときにメンバー名を取得
@@ -82,121 +79,16 @@ export function UploadForm({ childList, onSuccess, onCancel }: UploadFormProps) 
 
   const handleGenerateCaption = async () => {
     if (!selectedFile) return;
-
-    setIsGeneratingCaption(true);
-    setCaptionError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("image", selectedFile);
-
-      const response = await fetch("/api/ai/caption", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setCaption(data.caption);
-      } else {
-        setCaptionError(data.error || "キャプションの生成に失敗しました");
-      }
-    } catch (error) {
-      console.error("Caption generation failed:", error);
-      setCaptionError("ネットワークエラーが発生しました");
-    } finally {
-      setIsGeneratingCaption(false);
-    }
+    await generateCaption(selectedFile);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile || !selectedChildId) return;
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      // 1. Presigned URL を取得
-      const presignResponse = await fetch("/api/upload/presign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          childId: selectedChildId,
-          fileName: selectedFile.name,
-          contentType: selectedFile.type,
-        }),
-      });
-
-      if (!presignResponse.ok) {
-        throw new Error("Failed to get upload URL");
-      }
-
-      const { uploadUrl, publicUrl } = await presignResponse.json();
-      setUploadProgress(20);
-
-      // 2. R2 にダイレクトアップロード
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        body: selectedFile,
-        headers: {
-          "Content-Type": selectedFile.type,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error("Failed to upload file");
-      }
-      setUploadProgress(70);
-
-      // 3. 投稿を作成
-      const mediaType = selectedFile.type.startsWith("video/")
-        ? "video"
-        : "image";
-
-      const postResponse = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          child_id: selectedChildId,
-          media_url: publicUrl,
-          media_type: mediaType,
-          caption: caption || null,
-        }),
-      });
-
-      if (!postResponse.ok) {
-        throw new Error("Failed to create post");
-      }
-
-      const postData = await postResponse.json();
-      setUploadProgress(90);
-
-      // 4. タグを設定（選択されている場合）
-      if (selectedTagMemberIds.length > 0 && postData.post?.id) {
-        const tagResponse = await fetch(`/api/posts/${postData.post.id}/tags`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            memberIds: selectedTagMemberIds,
-          }),
-        });
-
-        if (!tagResponse.ok) {
-          console.error("Failed to set tags, but post was created");
-        }
-      }
-
-      setUploadProgress(100);
-
-      onSuccess?.();
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("アップロードに失敗しました");
-    } finally {
-      setIsUploading(false);
-    }
+    await submit({
+      childId: selectedChildId,
+      caption,
+      tagMemberIds: selectedTagMemberIds,
+    });
   };
 
   const isVideo = selectedFile?.type.startsWith("video/");

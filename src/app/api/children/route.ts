@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   const { data: children, error } = await supabase
     .from("children")
@@ -20,42 +13,26 @@ export async function GET() {
 
   if (error) {
     console.error("Children fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch children" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch children", 500);
   }
 
   return NextResponse.json({ children });
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   const body = await request.json();
   const { name, birth_date, gender, avatar_url } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Name is required" },
-      { status: 400 }
-    );
+    return jsonError("Name is required", 400);
   }
 
   if (!birth_date) {
-    return NextResponse.json(
-      { error: "Birth date is required" },
-      { status: 400 }
-    );
+    return jsonError("Birth date is required", 400);
   }
 
   const { data: child, error } = await supabase
@@ -71,10 +48,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("Child create error:", error);
-    return NextResponse.json(
-      { error: "Failed to create child" },
-      { status: 500 }
-    );
+    return jsonError("Failed to create child", 500);
   }
 
   return NextResponse.json({ child }, { status: 201 });

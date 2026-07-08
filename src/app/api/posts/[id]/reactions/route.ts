@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
   const { id: postId } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // ユーザーがいいねしているか確認
   const { data: reaction } = await supabase
@@ -39,17 +32,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
   const { id: postId } = await params;
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   // 既存のリアクションを確認
   const { data: existingReaction } = await supabase
@@ -68,10 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (error) {
       console.error("Reaction delete error:", error);
-      return NextResponse.json(
-        { error: "Failed to remove reaction" },
-        { status: 500 }
-      );
+      return jsonError("Failed to remove reaction", 500);
     }
 
     // 新しいいいね数を取得
@@ -93,10 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (error) {
       console.error("Reaction create error:", error);
-      return NextResponse.json(
-        { error: "Failed to add reaction" },
-        { status: 500 }
-      );
+      return jsonError("Failed to add reaction", 500);
     }
 
     // 新しいいいね数を取得

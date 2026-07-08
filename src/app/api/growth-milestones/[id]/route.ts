@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 type RouteParams = {
   params: Promise<{
@@ -8,16 +8,9 @@ type RouteParams = {
 };
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase } = auth;
 
   const { id } = await params;
 
@@ -25,7 +18,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(id)) {
-    return NextResponse.json({ error: "Invalid milestone ID" }, { status: 400 });
+    return jsonError("Invalid milestone ID", 400);
   }
 
   // 存在確認
@@ -36,7 +29,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     .single();
 
   if (fetchError || !existing) {
-    return NextResponse.json({ error: "Milestone not found" }, { status: 404 });
+    return jsonError("Milestone not found", 404);
   }
 
   // 削除
@@ -47,10 +40,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
   if (deleteError) {
     console.error("Milestone deletion error:", deleteError);
-    return NextResponse.json(
-      { error: "Failed to delete milestone" },
-      { status: 500 }
-    );
+    return jsonError("Failed to delete milestone", 500);
   }
 
   return NextResponse.json({ success: true });

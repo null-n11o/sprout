@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser, jsonError } from "@/lib/api/route-helpers";
 
 const POSTS_PER_PAGE = 10;
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   const { searchParams } = new URL(request.url);
   const cursor = searchParams.get("cursor");
@@ -61,10 +54,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("Posts fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch posts" },
-      { status: 500 }
-    );
+    return jsonError("Failed to fetch posts", 500);
   }
 
   const transformedPosts = posts?.map((post) => {
@@ -125,32 +115,19 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireUser();
+  if (auth.response) return auth.response;
+  const { supabase, user } = auth;
 
   const body = await request.json();
   const { child_id, media_url, media_type, caption } = body;
 
   if (!child_id || !media_url || !media_type) {
-    return NextResponse.json(
-      { error: "Missing required fields: child_id, media_url, media_type" },
-      { status: 400 }
-    );
+    return jsonError("Missing required fields: child_id, media_url, media_type", 400);
   }
 
   if (!["image", "video"].includes(media_type)) {
-    return NextResponse.json(
-      { error: "Invalid media_type. Must be 'image' or 'video'" },
-      { status: 400 }
-    );
+    return jsonError("Invalid media_type. Must be 'image' or 'video'", 400);
   }
 
   const { data: post, error } = await supabase
@@ -167,10 +144,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("Post creation error:", error);
-    return NextResponse.json(
-      { error: "Failed to create post" },
-      { status: 500 }
-    );
+    return jsonError("Failed to create post", 500);
   }
 
   return NextResponse.json({ post }, { status: 201 });

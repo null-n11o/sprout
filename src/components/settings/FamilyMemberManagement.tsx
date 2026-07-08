@@ -7,7 +7,6 @@ import { useToast } from "@/components/ui";
 import { useAuth } from "@/components/auth";
 import { Loader2, User, Edit2 } from "lucide-react";
 import {
-  FAMILY_ROLE_LABELS,
   getRoleDisplayName,
   type FamilyRole,
 } from "@/lib/api/family-members";
