@@ -11,7 +11,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "codex:app-server": "codex app-server",
+    "codex:app-server:unix": "codex app-server --listen unix://",
+    "codex:app-server:ws:local": "codex app-server --listen ws://127.0.0.1:4500",
+    "codex:app-server:schema": "codex app-server generate-ts --out /tmp/sprout-codex-app-server-schema"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
