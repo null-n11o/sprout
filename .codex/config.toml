@@ -1,0 +1,17 @@
+# Project-scoped Codex configuration for sprout.
+#
+# Keep this file conservative: repo conventions belong in AGENTS.md, while
+# personal model, provider, and credential settings should stay in ~/.codex.
+
+project_root_markers = [".git"]
+web_search = "cached"
+
+[features]
+multi_agent = true
+shell_snapshot = true
+
+# MCP servers can be added here later if this repo needs project-specific tools.
+# Example candidates:
+# - Playwright or Chrome DevTools for browser inspection
+# - Context7 for current framework/library docs
+# - GitHub for pull request and issue workflows
